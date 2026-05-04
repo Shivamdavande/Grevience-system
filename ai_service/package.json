@@ -1,0 +1,12 @@
+{
+  "name": "ai-service",
+  "version": "1.0.0",
+  "description": "AI Classification Service for Grievance System",
+  "main": "main.py",
+  "scripts": {
+    "start": ".\\venv\\Scripts\\python main.py",
+    "dev": ".\\venv\\Scripts\\python main.py",
+    "setup": "python -m venv venv && .\\venv\\Scripts\\pip install -r requirements.txt"
+  },
+  "dependencies": {}
+}
