@@ -1,19 +1,19 @@
-# Tasks: AI-Based Citizen Grievance Classification System
-
-- [x] Project Setup
-    - [x] Create project directories (`ai_service`, `server`, `client`)
-- [x] AI Service (Python/FastAPI)
-    - [x] Create `requirements.txt`
-    - [x] Implement `main.py` with zero-shot classifier
-- [x] Backend Service (Node.js/Express)
-    - [x] Initialize Node.js project
-    - [x] Implement MongoDB models
-    - [x] Implement API routes for complaints
-- [x] Frontend Application (React/Vite)
-    - [x] Initialize React app
-    - [x] Design and implement User Submission form
-    - [x] Design and implement Admin Dashboard
-- [x] Integration & Testing
-    - [x] Connect Backend to AI Service
-    - [x] Connect Frontend to Backend
-    - [x] README and Documentation
+- [x] Backend: Update Grievance model with lat/lon
+- [x] Backend: Update API to handle lat/lon
+- [x] Frontend: Install leaflet and react-leaflet
+- [x] Frontend: Add Leaflet CSS to index.html
+- [x] Frontend: Create MapPicker component
+- [x] Frontend: Integrate MapPicker into GrievanceForm
+- [x] Frontend: Update Dashboard to show location on map
+- [x] AI Service: Add image captioning (BLIP) model
+- [x] AI Service: Add /analyze-image endpoint
+- [x] Backend: Setup Multer for image uploads
+- [x] Backend: Update model for imageUrl and description
+- [x] Backend: Update API to handle image + coordinates
+- [x] Frontend: Add Image Upload component
+- [x] Frontend: Integrate image analysis with form
+- [x] Frontend: Add automatic image analysis on upload
+- [x] Backend: Add analyze-only endpoint for feedback
+- [x] Bugfix: Install PIL (Pillow) in ai_service venv
+- [x] Bugfix: Improve autofill logic in Frontend
+- [x] Bugfix: Defensive checks in Dashboard

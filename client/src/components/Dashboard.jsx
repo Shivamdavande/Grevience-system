@@ -94,9 +94,9 @@ const Dashboard = () => {
   if (loading && !stats) return <div style={{ textAlign: 'center', padding: '5rem' }}>Loading Dashboard...</div>;
 
   const pieData = {
-    labels: stats?.categories.map(c => c._id) || [],
+    labels: stats?.categories?.map(c => c._id) || [],
     datasets: [{
-      data: stats?.categories.map(c => c.count) || [],
+      data: stats?.categories?.map(c => c.count) || [],
       backgroundColor: ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
       borderWidth: 0,
     }]
@@ -213,8 +213,34 @@ const Dashboard = () => {
               {filteredComplaints.map((c) => (
                 <tr key={c._id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '1rem', maxWidth: '300px' }}>
-                    <div style={{ fontWeight: 600 }}>{c.text.substring(0, 50)}...</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{c.location}</div>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      {c.imageUrl && (
+                        <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border)' }}>
+                          <img 
+                            src={`http://127.0.0.1:5000${c.imageUrl}`} 
+                            alt="Grievance" 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          />
+                        </div>
+                      )}
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.text}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.location}</span>
+                          {c.lat && c.lon && (
+                            <a 
+                              href={`https://www.google.com/maps?q=${c.lat},${c.lon}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center' }}
+                              title="View exact location on Google Maps"
+                            >
+                              <MapPin size={14} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}>

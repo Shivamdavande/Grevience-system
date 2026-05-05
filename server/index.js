@@ -4,6 +4,11 @@ const cors = require('cors');
 const axios = require('axios');
 require('dotenv').config();
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const FormData = require('form-data');
+
 const Grievance = require('./models/Grievance');
 
 const app = express();
@@ -12,6 +17,17 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
+
+// Multer Setup
+const uploadDir = 'uploads';
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+});
+const upload = multer({ storage });
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/grievance_system';
@@ -21,27 +37,52 @@ mongoose.connect(MONGODB_URI)
 
 // Routes
 
-// 1. Submit a complaint
-app.post('/api/complaints', async (req, res) => {
-  const { text, location } = req.body;
+// 1. Submit a complaint (Supports Text + Image)
+app.post('/api/complaints', upload.single('image'), async (req, res) => {
+  const { text, location, lat, lon } = req.body;
+  const imageFile = req.file;
 
-  if (!text) {
-    return res.status(400).json({ error: 'Complaint text is required' });
+  if (!text && !imageFile) {
+    return res.status(400).json({ error: 'Complaint text or image is required' });
   }
 
   try {
-    // 1. Call AI Service for classification
-    console.log(`Sending text to AI service: "${text}"`);
-    let aiResponse;
-    try {
-        aiResponse = await axios.post(`${AI_SERVICE_URL}/classify`, { text });
-    } catch (aiErr) {
-        console.error("AI Service Error:", aiErr.message);
-        // Fallback if AI service is down
-        aiResponse = { data: { category: 'Others', priority: 'Low', confidence: 0 } };
-    }
+    let category, priority, confidence, imageDescription;
+    let imageUrl = imageFile ? `/uploads/${imageFile.filename}` : null;
 
-    const { category, priority, confidence } = aiResponse.data;
+    if (imageFile) {
+        // Analyze image if provided
+        console.log("Image received, sending to AI service for analysis...");
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(imageFile.path));
+
+        try {
+            const aiResponse = await axios.post(`${AI_SERVICE_URL}/analyze-image`, formData, {
+                headers: formData.getHeaders()
+            });
+            ({ category, priority, confidence, description: imageDescription } = aiResponse.data);
+            console.log(`AI Analysis: ${category} (${priority}) - ${imageDescription}`);
+        } catch (aiErr) {
+            console.error("AI Service Image Analysis Error:", aiErr.message);
+            // Fallback
+            category = 'Others';
+            priority = 'Low';
+            confidence = 0;
+            imageDescription = "Image analysis failed";
+        }
+    } else {
+        // Analyze text only
+        console.log(`Sending text to AI service: "${text}"`);
+        try {
+            const aiResponse = await axios.post(`${AI_SERVICE_URL}/classify`, { text });
+            ({ category, priority, confidence } = aiResponse.data);
+        } catch (aiErr) {
+            console.error("AI Service Text Error:", aiErr.message);
+            category = 'Others';
+            priority = 'Low';
+            confidence = 0;
+        }
+    }
 
     // 2. Map Category to Department
     let department = 'Municipal Corporation';
@@ -62,12 +103,16 @@ app.post('/api/complaints', async (req, res) => {
 
     // 3. Save to Database
     const newGrievance = new Grievance({
-      text,
+      text: text || imageDescription || 'No description provided',
       location: location || 'Location not provided',
+      lat,
+      lon,
       category,
       priority,
       confidence,
-      department
+      department,
+      imageUrl,
+      imageDescription
     });
 
     const savedGrievance = await newGrievance.save();
@@ -129,6 +174,29 @@ app.get('/api/stats', async (req, res) => {
         res.json({ categories: stats, statuses: statusStats });
     } catch (err) {
         res.status(500).json({ error: 'Server Error' });
+    }
+});
+
+// 5. Analyze image only (for immediate feedback)
+app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
+    const imageFile = req.file;
+    if (!imageFile) return res.status(400).json({ error: 'Image is required' });
+
+    try {
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(imageFile.path));
+
+        const aiResponse = await axios.post(`${AI_SERVICE_URL}/analyze-image`, formData, {
+            headers: formData.getHeaders()
+        });
+        
+        // Clean up temp file
+        // fs.unlinkSync(imageFile.path); 
+        
+        res.json(aiResponse.data);
+    } catch (err) {
+        console.error("AI Analysis failed", err.message);
+        res.status(500).json({ error: 'AI analysis failed' });
     }
 });
 

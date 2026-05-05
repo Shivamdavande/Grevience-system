@@ -35,13 +35,15 @@ const GrievanceSchema = new mongoose.Schema({
     type: String,
     default: 'Unknown',
   },
+  lat: {
+    type: Number,
+  },
+  lon: {
+    type: Number,
+  },
   confidence: {
     type: Number,
     default: 0,
-  },
-  resolutionImage: {
-    type: String,
-    default: null,
   },
   createdAt: {
     type: Date,
