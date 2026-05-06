@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
+const twilio = require('twilio');
 require('dotenv').config();
 
 const multer = require('multer');
@@ -36,6 +37,118 @@ mongoose.connect(MONGODB_URI)
   .catch(err => console.log('MongoDB Connection Error:', err));
 
 // Routes
+
+// Auth store (In-memory for OTPs)
+const otpStore = {};
+
+// Optional Twilio Setup (if env vars are provided)
+const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_ACCOUNT_SID.startsWith('AC') && process.env.TWILIO_AUTH_TOKEN)
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
+console.log('Twilio client initialized:', !!twilioClient, 'Service SID present:', !!process.env.TWILIO_SERVICE_SID);
+
+// Auth Routes
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { aadhar } = req.body;
+  if (!aadhar || aadhar.length !== 12) {
+    return res.status(400).json({ error: 'Valid 12-digit Aadhar is required' });
+  }
+
+  try {
+    const usersData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'users.json')));
+    const user = usersData.find(u => u.aadhar === aadhar);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Aadhar not linked to any account' });
+    }
+
+    let phone = user.phone;
+    if (!phone.startsWith('+91')) {
+      phone = '+91' + phone;
+    }
+
+    if (twilioClient && process.env.TWILIO_SERVICE_SID) {
+      // Use Twilio Verify API
+      try {
+        await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID)
+          .verifications
+          .create({to: phone, channel: 'sms'});
+        console.log(`Twilio Verify requested for ${phone}`);
+      } catch (twilioErr) {
+        console.error('Twilio Verify API Error:', twilioErr.message);
+        // Fallback to manual OTP if Twilio fails
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        otpStore[aadhar] = { otp, phone, expiresAt: Date.now() + 5 * 60 * 1000 };
+        console.log(`\n=== TWILIO FAILED - FALLBACK SIMULATED SMS ===\nTo: ${phone}\nOTP: ${otp}\n============================================\n`);
+      }
+    } else {
+      // Fallback: Generate 6-digit OTP manually
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      otpStore[aadhar] = { otp, phone, expiresAt: Date.now() + 5 * 60 * 1000 };
+      console.log(`\n=== SIMULATED SMS ===\nTo: ${phone}\nOTP: ${otp}\n=====================\n`);
+    }
+
+    res.json({ message: 'OTP sent successfully', phone: phone });
+  } catch (err) {
+    console.error('Send OTP Error:', err);
+    res.status(500).json({ error: 'Failed to send OTP' });
+  }
+});
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+  const { aadhar, otp } = req.body;
+
+  try {
+    const usersData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'users.json')));
+    const user = usersData.find(u => u.aadhar === aadhar);
+    if (!user) return res.status(404).json({ error: 'Aadhar not linked to any account' });
+
+    let phone = user.phone;
+    if (!phone.startsWith('+91')) {
+      phone = '+91' + phone;
+    }
+
+    // Check manual fallback store first
+    const record = otpStore[aadhar];
+    if (record) {
+      if (Date.now() > record.expiresAt) {
+        delete otpStore[aadhar];
+        return res.status(400).json({ error: 'OTP has expired' });
+      }
+      if (record.otp === otp) {
+        delete otpStore[aadhar];
+        return res.json({ message: 'Login successful', token: 'mock-jwt-token' });
+      }
+      // If it exists but doesn't match, we still return error (don't fall through to Twilio to avoid confusion)
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    // If not in manual store, try Twilio if configured
+    if (twilioClient && process.env.TWILIO_SERVICE_SID) {
+      try {
+        const verificationCheck = await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID)
+          .verificationChecks
+          .create({to: phone, code: otp});
+        
+        if (verificationCheck.status !== 'approved') {
+          return res.status(400).json({ error: 'Invalid or expired OTP' });
+        }
+      } catch (twilioErr) {
+        console.error('Twilio Verification Check Error:', twilioErr.message);
+        return res.status(400).json({ error: 'Verification failed. Please try again.' });
+      }
+    } else {
+      // If no Twilio and no record in store
+      return res.status(400).json({ error: 'No OTP requested or expired' });
+    }
+
+    // Success
+    res.json({ message: 'Login successful', token: 'mock-jwt-token' });
+  } catch (err) {
+    console.error('Verify OTP Error:', err);
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
 
 // 1. Submit a complaint (Supports Text + Image)
 app.post('/api/complaints', upload.single('image'), async (req, res) => {
