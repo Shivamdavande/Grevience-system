@@ -65,6 +65,14 @@ const GrievanceSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  similarityScore: {
+    type: Number,
+    default: 0,
+  },
+  isMatch: {
+    type: Boolean,
+    default: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

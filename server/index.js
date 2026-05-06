@@ -150,12 +150,14 @@ app.get('/api/complaints/:id', async (req, res) => {
 
 // 3. Update status
 app.patch('/api/complaints/:id', async (req, res) => {
-  const { status, resolutionImage, isAiGenerated, aiDetectionConfidence } = req.body;
+  const { status, resolutionImage, isAiGenerated, aiDetectionConfidence, similarityScore, isMatch } = req.body;
   try {
     const updateData = { status };
     if (resolutionImage) updateData.resolutionImage = resolutionImage;
     if (typeof isAiGenerated === 'boolean') updateData.isAiGenerated = isAiGenerated;
     if (typeof aiDetectionConfidence === 'number') updateData.aiDetectionConfidence = aiDetectionConfidence;
+    if (typeof similarityScore === 'number') updateData.similarityScore = similarityScore;
+    if (typeof isMatch === 'boolean') updateData.isMatch = isMatch;
 
     const updated = await Grievance.findByIdAndUpdate(
       req.params.id,
@@ -196,9 +198,6 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
       headers: formData.getHeaders()
     });
 
-    // Clean up temp file
-    // fs.unlinkSync(imageFile.path); 
-
     res.json(aiResponse.data);
   } catch (err) {
     console.error("AI Analysis failed", err.message);
@@ -226,6 +225,59 @@ app.post('/api/detect-ai-image', upload.single('image'), async (req, res) => {
   } catch (err) {
     console.error("AI Detection failed", err.message);
     res.status(500).json({ error: 'AI detection failed', is_ai_generated: false, confidence: 0 });
+  }
+});
+
+// 7. Compare Resolution Image with Original
+app.post('/api/compare-images', upload.single('image'), async (req, res) => {
+  const { complaintId } = req.body;
+  const resolutionFile = req.file;
+
+  if (!complaintId || !resolutionFile) {
+    return res.status(400).json({ error: 'Complaint ID and resolution image are required' });
+  }
+
+  try {
+    const complaint = await Grievance.findById(complaintId);
+    if (!complaint || !complaint.imageUrl) {
+      return res.status(404).json({ error: 'Original complaint image not found' });
+    }
+
+    // Path to original image - remove leading slash if present to avoid absolute path issues on Windows
+    const cleanImageUrl = complaint.imageUrl.startsWith('/') ? complaint.imageUrl.substring(1) : complaint.imageUrl;
+    const originalImagePath = path.join(__dirname, cleanImageUrl);
+
+    console.log(`Original Image Path: ${originalImagePath}`);
+    if (!fs.existsSync(originalImagePath)) {
+      console.error(`File not found: ${originalImagePath}`);
+      return res.status(404).json({ error: 'Original image file not found on server' });
+    }
+
+    const formData = new FormData();
+    formData.append('file1', fs.createReadStream(originalImagePath));
+    formData.append('file2', fs.createReadStream(resolutionFile.path));
+
+    const aiResponse = await axios.post(`${AI_SERVICE_URL}/compare-images`, formData, {
+      headers: formData.getHeaders()
+    });
+
+    // Clean up temp file
+    fs.unlinkSync(resolutionFile.path);
+
+    res.json(aiResponse.data);
+  } catch (err) {
+    console.error("Image Comparison failed:", err.message);
+    if (err.response) {
+      console.error("AI Service Response Error:", err.response.data);
+    }
+    if (resolutionFile && fs.existsSync(resolutionFile.path)) fs.unlinkSync(resolutionFile.path);
+    res.status(500).json({ 
+      error: 'Image comparison failed', 
+      details: err.message,
+      aiError: err.response ? err.response.data : null,
+      similarity_score: 0, 
+      is_match: false 
+    });
   }
 });
 

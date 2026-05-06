@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
-import { Clock, CheckCircle2, AlertCircle, Filter, RefreshCw, MapPin, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, Filter, RefreshCw, MapPin, ShieldAlert, AlertTriangle, LayoutDashboard } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
@@ -18,8 +19,9 @@ const Dashboard = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [viewImageModal, setViewImageModal] = useState({ open: false, image: null, title: '', isAi: false, aiConfidence: 0 });
 
-  // AI Detection state
+  // AI Detection & Comparison state
   const [aiDetection, setAiDetection] = useState({ checked: false, loading: false, isAi: false, confidence: 0 });
+  const [similarity, setSimilarity] = useState({ checked: false, loading: false, score: 0, isMatch: true });
 
   const fetchData = async () => {
     setLoading(true);
@@ -56,6 +58,7 @@ const Dashboard = () => {
     const newStatus = e.target.value;
     if (newStatus === 'Resolved') {
       setResolutionModal({ open: true, complaintId: id });
+      setSimilarity({ checked: false, loading: false, score: 0, isMatch: true });
     } else {
       updateStatus(id, newStatus);
     }
@@ -66,6 +69,7 @@ const Dashboard = () => {
     if (!file) return;
 
     setAiDetection({ checked: false, loading: true, isAi: false, confidence: 0 });
+    setSimilarity({ checked: false, loading: true, score: 0, isMatch: true });
 
     // Preview logic
     const reader = new FileReader();
@@ -85,17 +89,26 @@ const Dashboard = () => {
     };
     reader.readAsDataURL(file);
 
-    // Send to AI detection proxy
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('complaintId', resolutionModal.complaintId);
+
+    // Send to AI detection & Comparison
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await axios.post('http://127.0.0.1:5000/api/detect-ai-image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setAiDetection({ checked: true, loading: false, isAi: res.data.is_ai_generated, confidence: res.data.confidence });
+      const [aiRes, simRes] = await Promise.all([
+        axios.post('http://127.0.0.1:5000/api/detect-ai-image', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+        axios.post('http://127.0.0.1:5000/api/compare-images', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+      ]);
+      setAiDetection({ checked: true, loading: false, isAi: aiRes.data.is_ai_generated, confidence: aiRes.data.confidence });
+      setSimilarity({ checked: true, loading: false, score: simRes.data.similarity_score, isMatch: simRes.data.is_match });
     } catch (err) {
-      console.error("AI detection failed", err);
+      console.error("AI service calls failed", err);
       setAiDetection({ checked: true, loading: false, isAi: false, confidence: 0 });
+      setSimilarity({ checked: true, loading: false, score: 0, isMatch: false });
     }
   };
 
@@ -110,7 +123,9 @@ const Dashboard = () => {
         status: 'Resolved', 
         resolutionImage: photoPreview,
         isAiGenerated: aiDetection.isAi,
-        aiDetectionConfidence: aiDetection.confidence
+        aiDetectionConfidence: aiDetection.confidence,
+        similarityScore: similarity.score,
+        isMatch: similarity.isMatch
       };
       await axios.patch(`http://127.0.0.1:5000/api/complaints/${resolutionModal.complaintId}`, payload);
       fetchData();
@@ -121,6 +136,7 @@ const Dashboard = () => {
     setResolutionModal({ open: false, complaintId: null });
     setPhotoPreview(null);
     setAiDetection({ checked: false, loading: false, isAi: false, confidence: 0 });
+    setSimilarity({ checked: false, loading: false, score: 0, isMatch: true });
   };
 
   if (loading && !stats) return <div style={{ textAlign: 'center', padding: '5rem' }}>Loading Dashboard...</div>;
@@ -336,6 +352,12 @@ const Dashboard = () => {
                               <span>AI Generated Image</span>
                             </div>
                           )}
+                          {!c.isMatch && (
+                            <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--warning)', fontSize: '0.75rem', fontWeight: 700 }}>
+                              <AlertTriangle size={14} />
+                              <span>Problem Match: {c.similarityScore}%</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -376,37 +398,73 @@ const Dashboard = () => {
               <div style={{ margin: '1rem 0' }}>
                 <img src={photoPreview} alt="Proof preview" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover', borderRadius: '8px' }} />
                 
-                {aiDetection.loading && (
-                  <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
-                    <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                    <span>Analyzing image for AI generation...</span>
+                {(aiDetection.loading || similarity.loading) && (
+                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                      <span>AI is analyzing your submission...</span>
+                    </div>
                   </div>
                 )}
 
                 {aiDetection.checked && aiDetection.isAi && (
-                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid var(--danger)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--danger)', marginBottom: '0.5rem' }}>
-                      <AlertTriangle size={24} />
-                      <h4 style={{ margin: 0 }}>AI Generated Image Detected!</h4>
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    style={{ 
+                      marginTop: '1rem', 
+                      padding: '1.5rem', 
+                      background: 'rgba(239, 68, 68, 0.2)', 
+                      borderRadius: '12px', 
+                      border: '3px solid var(--danger)',
+                      boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
+                      animation: 'pulse-red 2s infinite'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', color: 'var(--danger)', marginBottom: '0.75rem' }}>
+                      <AlertTriangle size={32} />
+                      <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900 }}>CRITICAL SECURITY ALERT!</h3>
                     </div>
-                    <p style={{ color: 'var(--danger)', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      ⚠️ WARNING: Tum AI generated image upload kar rhe ho, is se tumhari job ja sakti hai! 🚨
+                    <p style={{ color: 'var(--danger)', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.4' }}>
+                      🛑 DHAYAN SE: Tum AI generated image upload kar rahe ho! <br/>
+                      Yeh cheating hai aur is se tumhari JOB TURANT JAA SAKTI HAI! 🚨
                     </p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                      Our system detected this image is {aiDetection.confidence}% likely to be AI-generated.
+                    <p style={{ color: 'white', fontSize: '1rem', marginTop: '0.75rem', fontWeight: 600 }}>
+                      AI Detection Confidence: <span style={{ color: 'var(--danger)' }}>{aiDetection.confidence}%</span>
                     </p>
-                    <label className="btn-primary" style={{ cursor: 'pointer', padding: '0.5rem 1rem', display: 'inline-block', marginTop: '0.5rem', fontSize: '0.8rem' }}>
-                      Re-upload Real Photo
-                      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoCapture} />
-                    </label>
+                    <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
+                      Our neural network has flagged this image as synthetic. Please provide a REAL live photo.
+                    </div>
+                  </motion.div>
+                )}
+
+                {similarity.checked && !similarity.isMatch && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px', border: '1px solid var(--warning)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--warning)', marginBottom: '0.5rem' }}>
+                      <AlertCircle size={24} />
+                      <h4 style={{ margin: 0 }}>Low Similarity Detected!</h4>
+                    </div>
+                    <p style={{ color: 'var(--warning)', fontSize: '0.9rem', fontWeight: 600 }}>
+                      This image only matches the original problem by {similarity.score}%.
+                    </p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.4rem' }}>
+                      Please make sure you are uploading a photo of the EXACT same location/problem.
+                    </p>
                   </div>
                 )}
 
-                {aiDetection.checked && !aiDetection.isAi && (
+                {aiDetection.checked && !aiDetection.isAi && similarity.checked && similarity.isMatch && (
                   <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--success)' }}>
                     <CheckCircle2 size={18} />
-                    <span>Authentic image verified by AI.</span>
+                    <span>Authentic image & location verified. ({similarity.score}% match)</span>
                   </div>
+                )}
+
+                {(aiDetection.isAi || !similarity.isMatch) && aiDetection.checked && similarity.checked && (
+                   <label className="btn-primary" style={{ cursor: 'pointer', padding: '0.5rem 1rem', display: 'inline-block', marginTop: '1rem', fontSize: '0.8rem' }}>
+                      Re-upload Correct Photo
+                      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoCapture} />
+                   </label>
                 )}
               </div>
             ) : (
@@ -420,7 +478,13 @@ const Dashboard = () => {
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
               <button className="glass" onClick={() => { setResolutionModal({ open: false, complaintId: null }); setPhotoPreview(null); setAiDetection({ checked: false, loading: false, isAi: false, confidence: 0 }); }}>Cancel</button>
-              <button className="btn-primary" onClick={submitResolution} disabled={!photoPreview || aiDetection.loading}>Submit & Resolve</button>
+              <button 
+                className="btn-primary" 
+                onClick={submitResolution} 
+                disabled={!photoPreview || aiDetection.loading || aiDetection.isAi}
+              >
+                Submit & Resolve
+              </button>
             </div>
           </div>
         </div>
