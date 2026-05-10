@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, CheckCircle, MapPin, AlertTriangle, Loader2, Camera, X } from 'lucide-react';
-
+import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck } from 'lucide-react';
 import MapPicker from './MapPicker';
 
 const GrievanceForm = ({ userAadhar, onSuccess }) => {
@@ -15,6 +14,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [selectedDept, setSelectedDept] = useState('Municipal Corporation');
+  const fileInputRef = useRef(null);
 
   const DEPARTMENTS = [
     'Municipal Corporation',
@@ -22,7 +22,8 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
     'Sewage Department',
     'Waste Department',
     'Water Department',
-    'Electric Department'
+    'Electric Department',
+    'Public Works Department'
   ];
 
   const handleLocationSelect = (data) => {
@@ -32,48 +33,36 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
 
-      // Start AI Analysis immediately
-      setAnalyzingImage(true);
-      const formData = new FormData();
-      formData.append('image', file);
+    setImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
 
-      try {
-        console.log("Starting instant AI analysis for image...");
-        const response = await axios.post('http://127.0.0.1:5000/api/analyze-image', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        
-        console.log("AI Analysis Result:", response.data);
-        
-        // Auto-fill description from AI
-        if (response.data.description) {
-            setText(response.data.description);
-        }
-        
-        // Map category to department
-        if (response.data.category) {
-            const cat = response.data.category.toLowerCase();
-            let dept = 'Municipal Corporation';
-            if (cat.includes('road')) dept = 'Road Department';
-            else if (cat.includes('sewage') || cat.includes('sanitation')) dept = 'Sewage Department';
-            else if (cat.includes('waste') || cat.includes('garbage')) dept = 'Waste Department';
-            else if (cat.includes('water')) dept = 'Water Department';
-            else if (cat.includes('electric') || cat.includes('light')) dept = 'Electric Department';
-            setSelectedDept(dept);
-        }
-      } catch (err) {
-        console.error("AI Analysis failed in frontend", err);
-      } finally {
-        setAnalyzingImage(false);
+    setAnalyzingImage(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/analyze-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (response.data.description) setText(response.data.description);
+      if (response.data.category) {
+        const cat = response.data.category.toLowerCase();
+        let dept = 'Municipal Corporation';
+        if (cat.includes('road')) dept = 'Road Department';
+        else if (cat.includes('sewage') || cat.includes('sanitation')) dept = 'Sewage Department';
+        else if (cat.includes('waste') || cat.includes('garbage')) dept = 'Waste Department';
+        else if (cat.includes('water')) dept = 'Water Department';
+        else if (cat.includes('electric') || cat.includes('light')) dept = 'Electric Department';
+        setSelectedDept(dept);
       }
+    } catch (err) {
+      console.error("AI Analysis failed", err);
+    } finally {
+      setAnalyzingImage(false);
     }
   };
 
@@ -81,7 +70,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
     setImage(null);
     setImagePreview(null);
     setAnalyzingImage(false);
-    setSelectedDept('Municipal Corporation');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e) => {
@@ -99,188 +88,135 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
       formData.append('userAadhar', userAadhar);
       if (image) formData.append('image', image);
 
-      const response = await axios.post('http://127.0.0.1:5000/api/complaints', formData, {
+      const response = await axios.post('http://localhost:5000/api/complaints', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
       setResult(response.data);
-      setText('');
-      setLocation('');
-      setCoords({ lat: null, lon: null });
-      setImage(null);
-      setImagePreview(null);
     } catch (error) {
       console.error("Submission failed", error);
-      alert("Error submitting grievance. Check if backend and database are running.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (result) {
+    return (
+      <div className="gov-card animate-fade-in" style={{ textAlign: 'center', padding: '5rem 2rem' }}>
+        <div style={{ width: '80px', height: '80px', background: '#dcfce7', color: '#166534', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+          <CheckCircle2 size={48} />
+        </div>
+        <h2 style={{ fontSize: '2rem', color: 'var(--gov-navy)', marginBottom: '1rem' }}>Grievance Registered Successfully</h2>
+        <p style={{ color: 'var(--gov-text-muted)', fontSize: '1.1rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem' }}>
+          Your application has been received and assigned a unique tracking ID. The nodal department has been notified for further action.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '2rem', background: 'var(--gov-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--gov-border)', maxWidth: '500px', margin: '0 auto 3rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>TRACKING ID (SHORT)</p>
+              <p style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--gov-navy)' }}>#{result._id.slice(-8).toUpperCase()}</p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>ASSIGNED DEPT</p>
+              <p style={{ fontWeight: 800, fontSize: '1rem', color: '#1e40af' }}>{result.department.toUpperCase()}</p>
+            </div>
+          </div>
+          <div style={{ height: '1px', background: 'var(--gov-border)' }}></div>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>FULL REFERENCE ID (FOR PRECISE TRACKING)</p>
+            <p style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--gov-text-muted)', background: '#f1f5f9', padding: '0.5rem', borderRadius: '4px', wordBreak: 'break-all' }}>{result._id}</p>
+          </div>
+        </div>
+        <div style={{ marginTop: '3rem' }}>
+          <button className="btn-gov-primary" onClick={() => setResult(null)}>SUBMIT NEW GRIEVANCE</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      {!result ? (
-        <motion.div 
-          className="glass" 
-          style={{ padding: '2.5rem' }}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Describe the Issue</label>
-              <textarea 
-                className="input-field" 
-                style={{ height: '100px', resize: 'none' }}
-                placeholder="Example: There is a huge pothole near the central park entrance..."
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                required={!image}
+    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem' }}>
+      <div className="gov-card">
+        <h3 style={{ marginBottom: '2rem', borderBottom: '2px solid var(--gov-bg)', paddingBottom: '1rem', color: 'var(--gov-navy)' }}>Grievance Details</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Evidence Upload (Optional)</label>
+            {!imagePreview ? (
+              <div 
+                onClick={() => fileInputRef.current.click()}
+                style={{ 
+                  border: '2px dashed var(--gov-border)', borderRadius: 'var(--radius-md)', height: '220px', 
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', background: 'var(--gov-bg)'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--gov-navy)'}
+                onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--gov-border)'}
+              >
+                <UploadCloud size={48} color="var(--gov-text-muted)" style={{ marginBottom: '1rem' }} />
+                <p style={{ fontWeight: 700, color: 'var(--gov-text-muted)' }}>Click to upload or drag image here</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--gov-text-muted)', marginTop: '0.5rem' }}>JPG, PNG up to 5MB</p>
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageChange} style={{ display: 'none' }} />
+              </div>
+            ) : (
+              <div style={{ position: 'relative', height: '220px', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--gov-border)' }}>
+                <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button 
+                  onClick={clearImage}
+                  type="button"
+                  style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer' }}
+                >
+                  <X size={16} />
+                </button>
+                {analyzingImage && (
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <Loader2 className="animate-spin" size={32} color="var(--gov-navy)" />
+                    <p style={{ fontWeight: 800, marginTop: '1rem', color: 'var(--gov-navy)', fontSize: '0.9rem' }}>AI ANALYZING INCIDENT...</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Detailed Description</label>
+            <textarea 
+              className="form-input" 
+              style={{ height: '150px', resize: 'none' }}
+              placeholder="Describe the issue in detail (e.g., exact nature of problem, nearby landmarks)..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              required={!image}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Incident Location</label>
+            <div style={{ position: 'relative' }}>
+              <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
+              <input 
+                type="text" 
+                className="form-input" 
+                style={{ paddingLeft: '3rem' }}
+                placeholder="Search or enter location address..."
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
             </div>
+          </div>
 
-            <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Attach Photo (Optional)</label>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                    {!imagePreview ? (
-                        <label className="glass" style={{ 
-                            flex: 1, 
-                            height: '100px', 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            justifyContent: 'center', 
-                            alignItems: 'center', 
-                            cursor: 'pointer',
-                            border: '2px dashed var(--border)',
-                            gap: '0.5rem'
-                        }}>
-                            <Camera size={32} style={{ color: 'var(--text-muted)' }} />
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Take Photo or Upload</span>
-                            <input type="file" accept="image/*" capture="environment" onChange={handleImageChange} style={{ display: 'none' }} />
-                        </label>
-                    ) : (
-                        <div style={{ position: 'relative', width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden' }}>
-                            <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: analyzingImage ? 'blur(2px) grayscale(0.5)' : 'none' }} />
-                            {analyzingImage && (
-                                <div style={{ 
-                                    position: 'absolute', 
-                                    top: 0, 
-                                    left: 0, 
-                                    right: 0, 
-                                    bottom: 0, 
-                                    background: 'rgba(0,0,0,0.6)', 
-                                    display: 'flex', 
-                                    flexDirection: 'column', 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center',
-                                    color: 'white',
-                                    gap: '0.5rem'
-                                }}>
-                                    <Loader2 className="animate-spin" size={24} />
-                                    <span style={{ fontSize: '0.8rem' }}>AI is reading photo...</span>
-                                </div>
-                            )}
-                            {!analyzingImage && (
-                                <button 
-                                    onClick={clearImage}
-                                    style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.5)', padding: '0.25rem', borderRadius: '50%', color: 'white' }}
-                                >
-                                    <X size={16} />
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Assign to Department</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="form-group">
+              <label className="form-label">Nodal Department</label>
               <select 
-                className="input-field" 
-                value={selectedDept} 
+                className="form-input"
+                value={selectedDept}
                 onChange={(e) => setSelectedDept(e.target.value)}
-                style={{ appearance: 'auto' }}
+                style={{ fontWeight: 600 }}
               >
-                {DEPARTMENTS.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
+                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
-              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                You can manually select the department or let our AI auto-suggest it when you upload an image.
-              </p>
-            </div>
-
-            <div style={{ marginBottom: '2rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Exact Location</label>
-              
-              <div style={{ marginBottom: '1rem' }}>
-                <MapPicker onLocationSelect={handleLocationSelect} />
-              </div>
-
-              <div style={{ position: 'relative' }}>
-                <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '1rem', color: 'var(--text-muted)' }} />
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  style={{ paddingLeft: '3rem', marginBottom: 0 }}
-                  placeholder="Address will appear here..."
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn-primary" 
-              style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" /> Processing with AI...
-                </>
-              ) : (
-                <>
-                  <Send size={18} /> Submit Grievance
-                </>
-              )}
-            </button>
-          </form>
-        </motion.div>
-      ) : (
-        <motion.div 
-          className="glass" 
-          style={{ padding: '2.5rem', textAlign: 'center', border: '2px solid var(--success)' }}
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div style={{ color: 'var(--success)', marginBottom: '1.5rem' }}>
-            <CheckCircle size={64} style={{ margin: '0 auto' }} />
-          </div>
-          <h2 style={{ fontSize: '2rem' }}>Submitted Successfully!</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Our AI has processed your report.</p>
-          
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px', textAlign: 'left', marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Assigned Category:</span>
-              <span style={{ fontWeight: 600, color: '#818cf8' }}>{result.category}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>AI Priority Score:</span>
-              <span style={{ 
-                fontWeight: 600, 
-                color: result.priority === 'High' ? 'var(--danger)' : result.priority === 'Medium' ? 'var(--warning)' : 'var(--success)'
-              }}>
-                {result.priority}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Tracking ID:</span>
-              <span style={{ fontFamily: 'monospace' }}>#{result._id.slice(-6).toUpperCase()}</span>
             </div>
           </div>
 
+<<<<<<< HEAD
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button className="glass" onClick={() => setResult(null)} style={{ padding: '0.75rem 2rem' }}>
               Report Another Issue
@@ -291,6 +227,35 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           </div>
         </motion.div>
       )}
+=======
+          <button type="submit" className="btn-gov-primary" style={{ width: '100%', justifyContent: 'center', padding: '1rem' }} disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" /> : <><Send size={20} /> SUBMIT FORM</>}
+          </button>
+        </form>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="gov-card">
+          <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gov-navy)', marginBottom: '1.5rem', textTransform: 'uppercase' }}>Precise Geo-Tagging</h4>
+          <div style={{ height: '280px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--gov-border)' }}>
+            <MapPicker onLocationSelect={handleLocationSelect} />
+          </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--gov-text-muted)', marginTop: '1rem' }}>
+            * Location data helps us dispatch the field team to the exact spot.
+          </p>
+        </div>
+
+        <div className="ai-feedback-box">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <ShieldCheck size={20} color="var(--gov-navy)" />
+            <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gov-navy)', margin: 0, textTransform: 'uppercase' }}>AI Verification System</h4>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--gov-text-main)', lineHeight: '1.6' }}>
+            Once you upload an image, our AI will automatically suggest the <strong>Department</strong> and <strong>Category</strong> of the issue to reduce manual entry errors.
+          </p>
+        </div>
+      </div>
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
     </div>
   );
 };

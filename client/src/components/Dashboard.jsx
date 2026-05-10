@@ -1,32 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+<<<<<<< HEAD
 import { Pie, Bar } from 'react-chartjs-2';
 import { Clock, CheckCircle2, AlertCircle, Filter, RefreshCw, MapPin, ShieldAlert, AlertTriangle, LayoutDashboard, PlusCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+=======
+import { Pie } from 'react-chartjs-2';
+import { Clock, CheckCircle2, AlertCircle, RefreshCw, MapPin, ShieldAlert, FileText, ChevronRight, LayoutGrid, Camera, X, Loader2 } from 'lucide-react';
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 const Dashboard = () => {
   const [complaints, setComplaints] = useState([]);
-  const [activeRole, setActiveRole] = useState(null);
+  const [activeRole, setActiveRole] = useState(() => localStorage.getItem('activeRole'));
   const [filterDepartment, setFilterDepartment] = useState('All');
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({ categories: [] });
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const [deptTokens, setDeptTokens] = useState([]);
+=======
+  const [error, setError] = useState(null);
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
 
-  // Modals for photo upload
   const [resolutionModal, setResolutionModal] = useState({ open: false, complaintId: null });
   const [photoPreview, setPhotoPreview] = useState(null);
+<<<<<<< HEAD
   const [viewImageModal, setViewImageModal] = useState({ open: false, image: null, originalImage: null, title: '', isAi: false, aiConfidence: 0 });
 
   // AI Detection & Comparison state
+=======
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
   const [aiDetection, setAiDetection] = useState({ checked: false, loading: false, isAi: false, confidence: 0 });
-  const [similarity, setSimilarity] = useState({ checked: false, loading: false, score: 0, isMatch: true });
 
   const fetchData = async () => {
     setLoading(true);
     try {
+<<<<<<< HEAD
       const [resComplaints, resStats, resTokens] = await Promise.all([
         axios.get('http://127.0.0.1:5000/api/complaints'),
         axios.get('http://127.0.0.1:5000/api/stats'),
@@ -35,8 +46,17 @@ const Dashboard = () => {
       setComplaints(resComplaints.data);
       setStats(resStats.data);
       setDeptTokens(resTokens.data);
+=======
+      const [resComplaints, resStats] = await Promise.all([
+        axios.get('http://localhost:5000/api/complaints'),
+        axios.get('http://localhost:5000/api/stats')
+      ]);
+      setComplaints(resComplaints.data || []);
+      setStats(resStats.data || { categories: [] });
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
     } catch (error) {
       console.error("Error fetching dashboard data", error);
+      setError("Unable to synchronize with the administration server.");
     } finally {
       setLoading(false);
     }
@@ -46,24 +66,19 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  const updateStatus = async (id, status, imageBase64 = null) => {
-    try {
-      const payload = { status };
-      if (imageBase64) payload.resolutionImage = imageBase64;
-      await axios.patch(`http://127.0.0.1:5000/api/complaints/${id}`, payload);
-      fetchData();
-    } catch (error) {
-      console.error("Update failed", error);
-    }
-  };
+  useEffect(() => {
+    if (activeRole) localStorage.setItem('activeRole', activeRole);
+    else localStorage.removeItem('activeRole');
+  }, [activeRole]);
 
-  const handleStatusChange = (e, id) => {
-    const newStatus = e.target.value;
+  const handleStatusChange = async (id, newStatus) => {
     if (newStatus === 'Resolved') {
       setResolutionModal({ open: true, complaintId: id });
-      setSimilarity({ checked: false, loading: false, score: 0, isMatch: true });
     } else {
-      updateStatus(id, newStatus);
+      try {
+        await axios.patch(`http://localhost:5000/api/complaints/${id}`, { status: newStatus });
+        fetchData();
+      } catch (err) { console.error(err); }
     }
   };
 
@@ -72,59 +87,31 @@ const Dashboard = () => {
     if (!file) return;
 
     setAiDetection({ checked: false, loading: true, isAi: false, confidence: 0 });
-    setSimilarity({ checked: false, loading: true, score: 0, isMatch: true });
-
-    // Preview logic
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        setPhotoPreview(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.src = reader.result;
-    };
+    reader.onloadend = () => setPhotoPreview(reader.result);
     reader.readAsDataURL(file);
 
     const formData = new FormData();
     formData.append('image', file);
     formData.append('complaintId', resolutionModal.complaintId);
 
-    // Send to AI detection & Comparison
     try {
-      const [aiRes, simRes] = await Promise.all([
-        axios.post('http://127.0.0.1:5000/api/detect-ai-image', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        }),
-        axios.post('http://127.0.0.1:5000/api/compare-images', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-      ]);
+      const aiRes = await axios.post('http://localhost:5000/api/detect-ai-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       setAiDetection({ checked: true, loading: false, isAi: aiRes.data.is_ai_generated, confidence: aiRes.data.confidence });
-      setSimilarity({ checked: true, loading: false, score: simRes.data.similarity_score, isMatch: simRes.data.is_match });
     } catch (err) {
-      console.error("AI service calls failed", err);
       setAiDetection({ checked: true, loading: false, isAi: false, confidence: 0 });
-      setSimilarity({ checked: true, loading: false, score: 0, isMatch: false });
     }
   };
 
   const submitResolution = async () => {
-    if (!photoPreview) {
-      alert("Please capture or upload a photo first.");
-      return;
-    }
-    
+    if (!photoPreview) return;
     try {
-      const payload = { 
-        status: 'Resolved', 
+      await axios.patch(`http://localhost:5000/api/complaints/${resolutionModal.complaintId}`, {
+        status: 'Resolved',
         resolutionImage: photoPreview,
+<<<<<<< HEAD
         isAiGenerated: aiDetection.isAi,
         aiDetectionConfidence: aiDetection.confidence,
         similarityScore: similarity.score,
@@ -153,10 +140,19 @@ const Dashboard = () => {
       backgroundColor: ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
       borderWidth: 0,
     }]
+=======
+        isAiGenerated: aiDetection.isAi
+      });
+      fetchData();
+      setResolutionModal({ open: false, complaintId: null });
+      setPhotoPreview(null);
+    } catch (err) { console.error(err); }
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
   };
 
   const DEPARTMENTS = [
     'Municipal Corporation',
+    'Public Works Department',
     'Road Department',
     'Sewage Department',
     'Waste Department',
@@ -170,17 +166,14 @@ const Dashboard = () => {
 
   if (!activeRole) {
     return (
-      <div className="glass" style={{ padding: '3rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
-        <h2 style={{ marginBottom: '2rem' }}>Select Admin Role</h2>
-        <div style={{ display: 'grid', gap: '1rem' }}>
+      <div className="gov-card" style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', padding: '5rem 2rem' }}>
+        <h2 style={{ fontSize: '2.25rem', color: 'var(--gov-navy)', marginBottom: '1rem' }}>Administrative Portal</h2>
+        <p style={{ color: 'var(--gov-text-muted)', marginBottom: '3.5rem' }}>Select your departmental jurisdiction to access nodal metrics and case resolution tools.</p>
+        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
           {DEPARTMENTS.map(dept => (
-            <button
-              key={dept}
-              onClick={() => setActiveRole(dept)}
-              className={dept === 'Municipal Corporation' ? 'btn-primary' : 'glass'}
-              style={{ padding: '1rem', fontSize: '1.1rem', width: '100%' }}
-            >
-              {dept} {dept === 'Municipal Corporation' && '(Master View)'}
+            <button key={dept} onClick={() => setActiveRole(dept)} className="btn-gov-secondary" style={{ height: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+              <ShieldAlert size={32} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>{dept.toUpperCase()}</span>
             </button>
           ))}
         </div>
@@ -188,13 +181,25 @@ const Dashboard = () => {
     );
   }
 
+  if (loading && complaints.length === 0) return <div style={{ textAlign: 'center', padding: '5rem' }}><Loader2 className="animate-spin" size={48} color="var(--gov-navy)" /></div>;
+
+  const pieData = {
+    labels: stats.categories.map(c => c._id),
+    datasets: [{
+      data: stats.categories.map(c => c.count),
+      backgroundColor: ['#003366', '#1a4a7a', '#ff9933', '#138808', '#718096', '#2d3748'],
+      borderWidth: 1
+    }]
+  };
+
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-        <div style={{ borderLeft: '4px solid var(--primary)', paddingLeft: '1rem' }}>
-          <h2 style={{ margin: 0 }}>{activeRole} Dashboard</h2>
-          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Managing {filteredComplaints.length} grievances</p>
+    <div className="animate-fade-in">
+      <div className="header-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', height: 'auto' }}>
+        <div>
+          <h2 style={{ fontSize: '2rem', color: 'var(--gov-navy)' }}>{activeRole.toUpperCase()} PANEL</h2>
+          <p style={{ color: 'var(--gov-text-muted)', fontSize: '0.95rem' }}>Managing {filteredComplaints.length} public grievances in current jurisdiction.</p>
         </div>
+<<<<<<< HEAD
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
           {activeRole !== 'Municipal Corporation' && (
             <div className="glass" style={{ 
@@ -218,24 +223,19 @@ const Dashboard = () => {
             </div>
           )}
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+=======
+        <div style={{ display: 'flex', gap: '1rem' }}>
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
           {activeRole === 'Municipal Corporation' && (
-            <select
-              value={filterDepartment}
-              onChange={(e) => setFilterDepartment(e.target.value)}
-              className="glass"
-              style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none' }}
-            >
-              <option value="All" style={{ background: '#1e1e2d', color: 'white' }}>All Departments</option>
-              {DEPARTMENTS.filter(d => d !== 'Municipal Corporation').map(dept => (
-                <option key={dept} value={dept} style={{ background: '#1e1e2d', color: 'white' }}>{dept}</option>
-              ))}
+            <select className="form-input" value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)} style={{ width: '220px', fontWeight: 700 }}>
+              <option value="All">All Departments</option>
+              {DEPARTMENTS.filter(d => d !== 'Municipal Corporation').map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           )}
-          <button className="glass" onClick={() => setActiveRole(null)} style={{ padding: '0.5rem 1rem' }}>
-            Change Role
-          </button>
+          <button onClick={() => setActiveRole(null)} className="btn-gov-secondary" style={{ fontSize: '0.8rem' }}>SWITCH ROLE</button>
         </div>
       </div>
+<<<<<<< HEAD
     </div>
       {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -243,38 +243,40 @@ const Dashboard = () => {
           <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '1rem', borderRadius: '12px', color: 'var(--warning)' }}>
             <Clock size={24} />
           </div>
+=======
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
+        <div className="gov-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', borderLeft: '4px solid #f59e0b' }}>
+          <div style={{ color: '#f59e0b' }}><Clock size={32} /></div>
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Pending</p>
-            <h3 style={{ fontSize: '1.5rem', margin: 0 }}>{filteredComplaints.filter(c => c.status === 'Pending').length}</h3>
+            <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)' }}>PENDING</p>
+            <h3 style={{ fontSize: '1.75rem' }}>{filteredComplaints.filter(c => c.status === 'Pending').length}</h3>
           </div>
         </div>
-        <div className="glass" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '1rem', borderRadius: '12px', color: 'var(--primary)' }}>
-            <RefreshCw size={24} />
-          </div>
+        <div className="gov-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', borderLeft: '4px solid var(--gov-navy)' }}>
+          <div style={{ color: 'var(--gov-navy)' }}><RefreshCw size={32} /></div>
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>In Progress</p>
-            <h3 style={{ fontSize: '1.5rem', margin: 0 }}>{filteredComplaints.filter(c => c.status === 'In Progress').length}</h3>
+            <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)' }}>IN PROGRESS</p>
+            <h3 style={{ fontSize: '1.75rem' }}>{filteredComplaints.filter(c => c.status === 'In Progress').length}</h3>
           </div>
         </div>
-        <div className="glass" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '1rem', borderRadius: '12px', color: 'var(--success)' }}>
-            <CheckCircle2 size={24} />
-          </div>
+        <div className="gov-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', borderLeft: '4px solid #10b981' }}>
+          <div style={{ color: '#10b981' }}><CheckCircle2 size={32} /></div>
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Resolved</p>
-            <h3 style={{ fontSize: '1.5rem', margin: 0 }}>{filteredComplaints.filter(c => c.status === 'Resolved').length}</h3>
+            <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)' }}>RESOLVED</p>
+            <h3 style={{ fontSize: '1.75rem' }}>{filteredComplaints.filter(c => c.status === 'Resolved').length}</h3>
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        {/* Table */}
-        <div className="glass" style={{ padding: '1.5rem', overflowX: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0 }}>Recent Complaints</h3>
-            <button onClick={fetchData} className="glass" style={{ padding: '0.5rem' }}><RefreshCw size={16} /></button>
+      <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '3rem' }}>
+        <div className="gov-card" style={{ padding: 0 }}>
+          <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--gov-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--gov-navy)' }}>Active Grievance Queue</h3>
+            <button onClick={fetchData} className="btn-gov-secondary" style={{ padding: '0.4rem' }}><RefreshCw size={16} /></button>
           </div>
+<<<<<<< HEAD
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
@@ -397,117 +399,70 @@ const Dashboard = () => {
                       )}
                     </div>
                   </td>
+=======
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', textAlign: 'left', fontSize: '0.75rem', color: 'var(--gov-text-muted)' }}>
+                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>ID / CASE</th>
+                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>CATEGORY</th>
+                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>PRIORITY</th>
+                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>STATUS</th>
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredComplaints.map(c => (
+                  <tr key={c._id} style={{ borderBottom: '1px solid var(--gov-border)' }}>
+                    <td style={{ padding: '1.25rem 2rem' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>#{c._id.slice(-6).toUpperCase()}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--gov-text-muted)' }}>{c.text.substring(0, 40)}...</div>
+                    </td>
+                    <td style={{ padding: '1.25rem 2rem', fontSize: '0.85rem', fontWeight: 600 }}>{c.category || 'General'}</td>
+                    <td style={{ padding: '1.25rem 2rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: c.priority === 'High' ? '#dc2626' : 'inherit' }}>{c.priority.toUpperCase()}</span>
+                    </td>
+                    <td style={{ padding: '1.25rem 2rem' }}>
+                      <select className="form-input" value={c.status} onChange={(e) => handleStatusChange(c._id, e.target.value)} style={{ padding: '0.4rem', fontSize: '0.75rem', fontWeight: 800, width: '130px' }}>
+                        <option value="Pending">PENDING</option>
+                        <option value="In Progress">IN PROGRESS</option>
+                        <option value="Resolved">RESOLVED</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Charts */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div className="glass" style={{ padding: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Issue Categories</h3>
-            <div style={{ height: '250px', display: 'flex', justifyContent: 'center' }}>
-              <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }} />
-            </div>
-          </div>
-
-          <div className="glass" style={{ padding: '1.5rem', textAlign: 'center' }}>
-            <AlertCircle size={32} style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-            <h4>AI Insight</h4>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              {stats?.categories[0]?._id || 'Road Issues'} is currently the most reported category. Recommend assigning more resources to this department.
-            </p>
+        <div className="gov-card">
+          <h3 style={{ fontSize: '1.1rem', color: 'var(--gov-navy)', marginBottom: '2rem' }}>Incident Classification</h3>
+          <div style={{ height: '300px' }}>
+            <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 700, size: 11 } } } } }} />
           </div>
         </div>
       </div>
 
-      {/* Resolution Photo Modal */}
       {resolutionModal.open && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div className="glass" style={{ padding: '2rem', maxWidth: '450px', width: '90%', textAlign: 'center' }}>
-            <h3>Upload Live Photo</h3>
-            <p style={{ color: 'var(--text-muted)' }}>You must provide photographic proof to resolve this issue.</p>
-
-            {photoPreview ? (
-              <div style={{ margin: '1rem 0' }}>
-                <img src={photoPreview} alt="Proof preview" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover', borderRadius: '8px' }} />
-                
-                {(aiDetection.loading || similarity.loading) && (
-                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                      <span>AI is analyzing your submission...</span>
-                    </div>
-                  </div>
-                )}
-
-                {aiDetection.checked && aiDetection.isAi && (
-                  <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    style={{ 
-                      marginTop: '1rem', 
-                      padding: '1.5rem', 
-                      background: 'rgba(239, 68, 68, 0.2)', 
-                      borderRadius: '12px', 
-                      border: '3px solid var(--danger)',
-                      boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
-                      animation: 'pulse-red 2s infinite'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', color: 'var(--danger)', marginBottom: '0.75rem' }}>
-                      <AlertTriangle size={32} />
-                      <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900 }}>CRITICAL SECURITY ALERT!</h3>
-                    </div>
-                    <p style={{ color: 'var(--danger)', fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', lineHeight: '1.4' }}>
-                      🛑 DHAYAN SE: Tum AI generated image upload kar rahe ho! <br/>
-                      Yeh cheating hai aur is se tumhari JOB TURANT JAA SAKTI HAI! 🚨
-                    </p>
-                    <p style={{ color: 'white', fontSize: '1rem', marginTop: '0.75rem', fontWeight: 600 }}>
-                      AI Detection Confidence: <span style={{ color: 'var(--danger)' }}>{aiDetection.confidence}%</span>
-                    </p>
-                    <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
-                      Our neural network has flagged this image as synthetic. Please provide a REAL live photo.
-                    </div>
-                  </motion.div>
-                )}
-
-                {similarity.checked && !similarity.isMatch && (
-                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px', border: '1px solid var(--warning)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--warning)', marginBottom: '0.5rem' }}>
-                      <AlertCircle size={24} />
-                      <h4 style={{ margin: 0 }}>Low Similarity Detected!</h4>
-                    </div>
-                    <p style={{ color: 'var(--warning)', fontSize: '0.9rem', fontWeight: 600 }}>
-                      This image only matches the original problem by {similarity.score}%.
-                    </p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.4rem' }}>
-                      Please make sure you are uploading a photo of the EXACT same location/problem.
-                    </p>
-                  </div>
-                )}
-
-                {aiDetection.checked && !aiDetection.isAi && similarity.checked && similarity.isMatch && (
-                  <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--success)' }}>
-                    <CheckCircle2 size={18} />
-                    <span>Authentic image & location verified. ({similarity.score}% match)</span>
-                  </div>
-                )}
-
-                {(aiDetection.isAi || !similarity.isMatch) && aiDetection.checked && similarity.checked && (
-                   <label className="btn-primary" style={{ cursor: 'pointer', padding: '0.5rem 1rem', display: 'inline-block', marginTop: '1rem', fontSize: '0.8rem' }}>
-                      Re-upload Correct Photo
-                      <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoCapture} />
-                   </label>
-                )}
-              </div>
-            ) : (
-              <div style={{ margin: '2rem 0' }}>
-                <label className="btn-primary" style={{ cursor: 'pointer', padding: '1rem', display: 'inline-block' }}>
-                  Capture / Upload Photo
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+          <div className="gov-card" style={{ maxWidth: '450px', width: '90%', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--gov-navy)', marginBottom: '1rem' }}>Resolution Verification</h3>
+            <p style={{ color: 'var(--gov-text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>Capture or upload photographic proof that the issue has been resolved.</p>
+            
+            <div className="form-group" style={{ marginBottom: '2rem' }}>
+              {photoPreview ? (
+                <div style={{ position: 'relative', height: '200px', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                  <img src={photoPreview} alt="Resolution" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {aiDetection.loading && <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 className="animate-spin" /></div>}
+                </div>
+              ) : (
+                <label className="btn-gov-primary" style={{ width: '100%', cursor: 'pointer', height: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Camera size={32} />
+                  CAPTURE EVIDENCE
                   <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoCapture} />
                 </label>
+<<<<<<< HEAD
               </div>
             )}
 
@@ -548,6 +503,8 @@ const Dashboard = () => {
                   </div>
                   <img src={viewImageModal.originalImage} alt="Original Complaint" style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--border)', objectFit: 'contain' }} />
                 </div>
+=======
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
               )}
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -558,6 +515,7 @@ const Dashboard = () => {
               </div>
             </div>
 
+<<<<<<< HEAD
             {viewImageModal.isAi && (
               <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.15)', borderRadius: '12px', border: '2px solid var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', color: 'var(--danger)' }}>
                 <ShieldAlert size={24} />
@@ -566,10 +524,15 @@ const Dashboard = () => {
             )}
             
             <button className="btn-primary" style={{ marginTop: '1.5rem', width: '100%', padding: '1rem' }} onClick={() => setViewImageModal({ open: false, image: null, originalImage: null, title: '', isAi: false, aiConfidence: 0 })}>Close Preview</button>
+=======
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button className="btn-gov-secondary" style={{ flex: 1 }} onClick={() => setResolutionModal({ open: false, complaintId: null })}>CANCEL</button>
+              <button className="btn-gov-primary" style={{ flex: 1 }} onClick={submitResolution} disabled={!photoPreview || aiDetection.loading || aiDetection.isAi}>RESOLVE CASE</button>
+            </div>
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
           </div>
         </div>
       )}
-
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
-import { Search, Clock, CheckCircle2, RefreshCw, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Clock, CheckCircle2, RefreshCw, AlertCircle, FileText, MapPin, Calendar, Hash } from 'lucide-react';
 
 const TrackStatus = () => {
   const [trackingId, setTrackingId] = useState('');
@@ -17,99 +17,146 @@ const TrackStatus = () => {
     setError('');
     setResult(null);
 
+    // Clean tracking ID (strip # if present)
+    const cleanId = trackingId.startsWith('#') ? trackingId.substring(1) : trackingId;
+
     try {
-      const response = await axios.get(`http://127.0.0.1:5000/api/complaints/${trackingId}`);
+      const response = await axios.get(`http://localhost:5000/api/complaints/${cleanId}`);
       setResult(response.data);
     } catch (err) {
-      setError('Complaint not found or invalid Tracking ID. Please check and try again.');
+      setError('Unable to find any record with the provided Tracking ID. Please double-check and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
-      case 'Pending': return <Clock size={32} style={{ color: 'var(--warning)' }} />;
-      case 'In Progress': return <RefreshCw size={32} style={{ color: 'var(--primary)' }} className="animate-spin" />;
-      case 'Resolved': return <CheckCircle2 size={32} style={{ color: 'var(--success)' }} />;
-      default: return <Clock size={32} />;
+      case 'Pending': return <span className="badge badge-pending">Pending</span>;
+      case 'In Progress': return <span className="badge badge-progress">In Progress</span>;
+      case 'Resolved': return <span className="badge badge-resolved">Resolved</span>;
+      default: return <span className="badge">{status}</span>;
     }
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-      <motion.div 
-        className="glass" 
-        style={{ padding: '2.5rem', marginBottom: '2rem' }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      <div className="gov-card" style={{ marginBottom: '3rem', borderTop: '4px solid var(--gov-navy)' }}>
+        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--gov-navy)' }}>Track Your Application</h3>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem' }}>
           <div style={{ flex: 1, position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '1.2rem', color: 'var(--text-muted)' }} />
-            <input 
-              type="text" 
-              className="input-field" 
-              style={{ paddingLeft: '3rem', marginBottom: 0, height: '3rem' }}
-              placeholder="Enter your Tracking ID (e.g. 64b8f...)"
+            <Hash size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
+            <input
+              type="text"
+              className="form-input"
+              style={{ paddingLeft: '3.5rem', fontWeight: 600 }}
+              placeholder="ENTER TRACKING ID (e.g. 64b81c...)"
               value={trackingId}
               onChange={(e) => setTrackingId(e.target.value.trim())}
               required
             />
           </div>
-          <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0 1.5rem', height: '3rem' }}>
-            {loading ? 'Searching...' : 'Track'}
+          <button type="submit" className="btn-gov-primary" disabled={loading}>
+            {loading ? <RefreshCw className="animate-spin" size={18} /> : 'TRACK STATUS'}
           </button>
         </form>
-        {error && <p style={{ color: 'var(--danger)', marginTop: '1rem', textAlign: 'center' }}>{error}</p>}
-      </motion.div>
-
-      {result && (
-        <motion.div 
-          className="glass" 
-          style={{ padding: '2.5rem' }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem' }}>
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '50%' }}>
-              {getStatusIcon(result.status)}
-            </div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '1.5rem' }}>{result.status}</h2>
-              <p style={{ color: 'var(--text-muted)', margin: 0 }}>Current Status</p>
-            </div>
+        {error && (
+          <div style={{ marginTop: '1.5rem', color: '#dc2626', background: '#fef2f2', padding: '1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem', borderLeft: '3px solid #dc2626' }}>
+            {error}
           </div>
+        )}
+      </div>
 
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            <div>
-              <p style={{ color: 'var(--text-muted)', margin: '0 0 0.25rem 0', fontSize: '0.9rem' }}>Issue Description</p>
-              <p style={{ margin: 0, fontWeight: 500 }}>{result.text}</p>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
-                <p style={{ color: 'var(--text-muted)', margin: '0 0 0.25rem 0', fontSize: '0.8rem' }}>Assigned Department</p>
-                <p style={{ margin: 0, fontWeight: 600, color: 'var(--primary)' }}>{result.department}</p>
+      <AnimatePresence>
+        {result && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="gov-card"
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem', borderBottom: '1px solid var(--gov-border)', paddingBottom: '2rem' }}>
+              <div>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Grievance ID</p>
+                <h2 style={{ fontSize: '1.75rem', color: 'var(--gov-navy)', fontWeight: 800 }}>#{result._id.toUpperCase()}</h2>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
-                <p style={{ color: 'var(--text-muted)', margin: '0 0 0.25rem 0', fontSize: '0.8rem' }}>Category</p>
-                <p style={{ margin: 0, fontWeight: 600 }}>{result.category}</p>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>Current Status</p>
+                <div style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
+                  {getStatusBadge(result.status)}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
-                <p style={{ color: 'var(--text-muted)', margin: '0 0 0.25rem 0', fontSize: '0.8rem' }}>Priority</p>
-                <p style={{ margin: 0, fontWeight: 600, color: result.priority === 'High' ? 'var(--danger)' : result.priority === 'Medium' ? 'var(--warning)' : 'var(--success)' }}>
-                  {result.priority}
-                </p>
+            <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem' }}>
+              <div>
+                <div className="form-group" style={{ marginBottom: '2rem' }}>
+                  <label className="form-label">Issue Summary</label>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 500, lineHeight: '1.6' }}>{result.text}</p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                  <div>
+                    <label className="form-label">Category</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                      <FileText size={16} color="var(--gov-navy)" />
+                      {result.category || 'General'}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label">Priority</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: result.priority === 'High' ? '#dc2626' : 'inherit' }}>
+                      <AlertCircle size={16} />
+                      {result.priority || 'Medium'}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label">Department</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                      <RefreshCw size={16} color="var(--gov-navy)" />
+                      {result.department}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label">Submitted On</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                      <Calendar size={16} color="var(--gov-navy)" />
+                      {new Date(result.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '2.5rem' }}>
+                  <label className="form-label">Incident Location</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, color: 'var(--gov-text-muted)' }}>
+                    <MapPin size={16} />
+                    {result.location}
+                  </div>
+                </div>
               </div>
-               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
-                <p style={{ color: 'var(--text-muted)', margin: '0 0 0.25rem 0', fontSize: '0.8rem' }}>Submitted On</p>
-                <p style={{ margin: 0, fontWeight: 600 }}>{new Date(result.createdAt).toLocaleDateString()}</p>
+
+              <div>
+                <label className="form-label">Incident Evidence</label>
+                {result.imageUrl ? (
+                  <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--gov-border)', background: 'var(--gov-bg)' }}>
+                    <img src={`http://localhost:5000${result.imageUrl}`} alt="Incident" style={{ width: '100%', height: '240px', objectFit: 'cover' }} />
+                  </div>
+                ) : (
+                  <div style={{ height: '240px', background: 'var(--gov-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)', border: '1px dashed var(--gov-border)', color: 'var(--gov-text-muted)', fontSize: '0.9rem' }}>
+                    No image evidence provided
+                  </div>
+                )}
+                
+                {result.resolutionImage && (
+                  <div style={{ marginTop: '2rem' }}>
+                    <label className="form-label">Resolution Proof</label>
+                    <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '2px solid var(--gov-green)', background: 'var(--gov-bg)' }}>
+                      <img src={result.resolutionImage} alt="Resolution" style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+<<<<<<< HEAD
           </div>
 
           {result.status === 'Resolved' && result.resolutionImage && (
@@ -128,6 +175,11 @@ const TrackStatus = () => {
           )}
         </motion.div>
       )}
+=======
+          </motion.div>
+        )}
+      </AnimatePresence>
+>>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
     </div>
   );
 };
