@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { 
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 const UserDashboard = ({ userAadhar, onReportIssue }) => {
+  const { t } = useTranslation();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -79,8 +81,8 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
         <div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Your <span className="gradient-text">Dashboard</span></h1>
-          <p style={{ color: 'var(--text-muted)' }}>Welcome back! Track and manage your reported issues.</p>
+          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{t('nav.home')} <span className="gradient-text">{t('nav.dashboard')}</span></h1>
+          <p style={{ color: 'var(--text-muted)' }}>{t('user.welcome')}</p>
         </div>
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
           <motion.div 
@@ -101,8 +103,8 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
               <PlusCircle size={16} color="black" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '0.7rem', color: '#eab308', fontWeight: 'bold', textTransform: 'uppercase' }}>Your Rewards</p>
-              <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: '#fef08a' }}>{userTokens} Tokens</p>
+              <p style={{ margin: 0, fontSize: '0.7rem', color: '#eab308', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('user.rewards')}</p>
+              <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: '#fef08a' }}>{userTokens} {t('user.tokens')}</p>
             </div>
           </motion.div>
           <button 
@@ -110,7 +112,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
             onClick={onReportIssue}
             style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 1.5rem', borderRadius: '12px' }}
           >
-            <PlusCircle size={20} /> Report New Issue
+            <PlusCircle size={20} /> {t('nav.report')}
           </button>
         </div>
       </header>
@@ -118,7 +120,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '4rem' }}>
           <RefreshCw size={40} className="animate-spin" style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-          <p style={{ color: 'var(--text-muted)' }}>Loading your grievances...</p>
+          <p style={{ color: 'var(--text-muted)' }}>{t('user.loadingGrievances')}</p>
         </div>
       ) : error ? (
         <div className="glass" style={{ padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
@@ -146,14 +148,14 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
               <AlertCircle size={40} style={{ color: 'var(--text-muted)' }} />
             </div>
           </div>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>No grievances reported yet</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Help us make the city better by reporting issues in your neighborhood.</p>
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{t('user.noGrievances')}</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>{t('user.noGrievancesSub')}</p>
           <button 
             className="btn-primary" 
             onClick={onReportIssue}
             style={{ padding: '0.8rem 2rem' }}
           >
-            Report Your First Issue
+            {t('nav.report')}
           </button>
         </motion.div>
       ) : (
@@ -195,7 +197,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                   <div>
                     <div style={getStatusBadgeStyle(item.status)}>
                       {getStatusIcon(item.status)}
-                      {item.status}
+                      {item.status === 'Pending' ? t('admin.pending') : item.status === 'In Progress' ? t('admin.inProgress') : t('admin.resolved')}
                     </div>
                     <span style={{ marginLeft: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                       ID: {item._id.substring(0, 8)}...
@@ -209,7 +211,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                     fontSize: '0.75rem',
                     fontWeight: 'bold'
                   }}>
-                    {item.priority} Priority
+                    {item.priority} {t('user.priorityLabel')}
                   </div>
                 </div>
 
@@ -260,18 +262,18 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
               >
                 <div style={{ display: 'grid', gridTemplateColumns: item.status === 'Resolved' && item.resolutionImage ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px' }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>ORIGINAL ISSUE DESCRIPTION</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>{t('user.originalDesc')}</p>
                     <p style={{ margin: 0, fontSize: '0.95rem' }}>{item.text}</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>LOCATION</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>{t('user.locationLabel')}</p>
                     <p style={{ margin: 0, fontSize: '0.95rem' }}>{item.location}</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>DEPARTMENT</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>{t('user.departmentLabel')}</p>
                     <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 600 }}>{item.department}</p>
                   </div>
 
                   {item.status === 'Resolved' && item.resolutionImage && (
                     <div style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                       <p style={{ color: '#10b981', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <CheckCircle2 size={16} /> RESOLUTION PROOF
+                        <CheckCircle2 size={16} /> {t('user.resolutionProof')}
                       </p>
                       <div style={{ width: '100%', height: '200px', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
                         <img 
@@ -281,7 +283,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                         />
                       </div>
                       <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                        This issue has been resolved by the <strong>{item.department}</strong>. Thank you for your patience.
+                        {t('user.resolvedMsg', { dept: item.department })}
                       </p>
                     </div>
                   )}

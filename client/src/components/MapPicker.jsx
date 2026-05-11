@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import axios from 'axios';
 import { MapPin, Navigation, Loader2 } from 'lucide-react';
@@ -17,6 +18,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const MapPicker = ({ onLocationSelect, initialPos }) => {
+  const { t } = useTranslation();
   const [position, setPosition] = useState(initialPos || [20.5937, 78.9629]); // Default to India center
   const [detecting, setDetecting] = useState(false);
 
@@ -122,7 +124,7 @@ const MapPicker = ({ onLocationSelect, initialPos }) => {
         }}
       >
         {detecting ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
-        {detecting ? 'Detecting...' : 'Use My Location'}
+        {detecting ? t('map.detecting') : t('map.useMyLocation')}
       </button>
 
       <div style={{
@@ -139,7 +141,7 @@ const MapPicker = ({ onLocationSelect, initialPos }) => {
         color: '#ccc',
         pointerEvents: 'none'
       }}>
-        Tap map to set exact spot
+        {t('map.tapMap')}
       </div>
     </div>
   );

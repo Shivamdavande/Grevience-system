@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
-import { Clock, CheckCircle2, AlertCircle, Filter, RefreshCw, MapPin, ShieldAlert, AlertTriangle, LayoutDashboard, PlusCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Clock, CheckCircle2, AlertCircle, Filter, RefreshCw, MapPin, ShieldAlert, AlertTriangle, LayoutDashboard, PlusCircle, Loader2, Camera, X, ArrowRight, Check, BarChart3, TrendingUp } from 'lucide-react';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { motion, AnimatePresence } from 'framer-motion';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartDataLabels);
 
-const Dashboard = () => {
+const Dashboard = ({ userDepartment }) => {
+  const { t } = useTranslation();
   const [complaints, setComplaints] = useState([]);
-  const [activeRole, setActiveRole] = useState(() => localStorage.getItem('activeRole'));
-  const [filterDepartment, setFilterDepartment] = useState('All');
   const [stats, setStats] = useState({ categories: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,6 +24,17 @@ const Dashboard = () => {
   const [aiDetection, setAiDetection] = useState({ checked: false, loading: false, isAi: false, confidence: 0 });
   const [similarity, setSimilarity] = useState({ checked: false, loading: false, score: 0, isMatch: true });
   const [resolutionLocation, setResolutionLocation] = useState({ lat: null, lon: null, fetching: false });
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [perfModalOpen, setPerfModalOpen] = useState(false);
+
+  const departments = [
+    'Road Department',
+    'Sewage Department',
+    'Waste Department',
+    'Water Department',
+    'Electric Department'
+  ];
 
   const fetchData = async () => {
     setLoading(true);
@@ -45,12 +57,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (activeRole) localStorage.setItem('activeRole', activeRole);
-    else localStorage.removeItem('activeRole');
-  }, [activeRole]);
+  }, [userDepartment]);
 
   const handleStatusChange = async (id, newStatus) => {
     if (newStatus === 'Resolved') {
@@ -71,7 +78,6 @@ const Dashboard = () => {
     setSimilarity({ checked: false, loading: true, score: 0, isMatch: true });
     setResolutionLocation({ lat: null, lon: null, fetching: true });
 
-    // Capture GPS coordinates for resolution proof
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setResolutionLocation({ lat: position.coords.latitude, lon: position.coords.longitude, fetching: false });
@@ -79,7 +85,7 @@ const Dashboard = () => {
       (err) => {
         console.error("GPS Capture failed", err);
         setResolutionLocation(prev => ({ ...prev, fetching: false }));
-        alert("Warning: Location services are required for verification. Case resolution may be denied by the server.");
+        alert("Warning: Location services are required for verification.");
       },
       { enableHighAccuracy: true }
     );
@@ -128,331 +134,525 @@ const Dashboard = () => {
       setSimilarity({ checked: false, loading: false, score: 0, isMatch: true });
     } catch (error) {
       console.error("Update failed", error);
-      alert("Failed to resolve grievance. Please try again. " + (error.response?.data?.error || error.message));
+      alert("Failed to resolve grievance.");
     }
   };
 
-  if (loading && !stats) return <div style={{ textAlign: 'center', padding: '5rem' }}>Loading Dashboard...</div>;
+  const filteredComplaints = userDepartment && userDepartment !== 'Municipal Corporation'
+    ? complaints.filter(c => {
+        const matchesDept = c.department === userDepartment;
+        const matchesStatus = statusFilter === 'All' || (statusFilter === 'High' ? c.priority === 'High' : c.status === statusFilter);
+        return matchesDept && matchesStatus;
+      })
+    : complaints.filter(c => {
+        const matchesDept = selectedDeptFilter === 'All' || c.department === selectedDeptFilter;
+        const matchesStatus = statusFilter === 'All' || (statusFilter === 'High' ? c.priority === 'High' : c.status === statusFilter);
+        return matchesDept && matchesStatus;
+      });
 
-  const pieData = {
-    labels: stats?.categories?.map(c => c._id) || [],
-    datasets: [{
-      data: stats?.categories?.map(c => c.count) || [],
-      backgroundColor: ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
-      borderWidth: 0,
-    }]
+  const isMunicipalAdmin = !userDepartment || userDepartment === 'Municipal Corporation';
+
+  const getDeptStats = (deptName) => {
+    const deptComplaints = complaints.filter(c => c.department === deptName);
+    return {
+      pending: deptComplaints.filter(c => c.status === 'Pending').length,
+      inProgress: deptComplaints.filter(c => c.status === 'In Progress').length,
+      resolved: deptComplaints.filter(c => c.status === 'Resolved').length,
+      tokens: deptTokens.find(d => d.name === deptName)?.tokens || 0
+    };
   };
 
-  const DEPARTMENTS = [
-    'Municipal Corporation',
-    'Public Works Department',
-    'Road Department',
-    'Sewage Department',
-    'Waste Department',
-    'Water Department',
-    'Electric Department'
-  ];
+  const currentDeptTokens = userDepartment 
+    ? (deptTokens.find(d => d.name === userDepartment)?.tokens || 0)
+    : (deptTokens.reduce((acc, curr) => acc + curr.tokens, 0));
 
-  const filteredComplaints = activeRole === 'Municipal Corporation'
-    ? (filterDepartment === 'All' ? complaints : complaints.filter(c => c.department === filterDepartment))
-    : complaints.filter(c => c.department === activeRole);
-
-  if (!activeRole) {
-    return (
-      <div className="gov-card" style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', padding: '5rem 2rem' }}>
-        <h2 style={{ fontSize: '2.25rem', color: 'var(--gov-navy)', marginBottom: '1rem' }}>Administrative Portal</h2>
-        <p style={{ color: 'var(--gov-text-muted)', marginBottom: '3.5rem' }}>Select your departmental jurisdiction to access nodal metrics and case resolution tools.</p>
-        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-          {DEPARTMENTS.map(dept => (
-            <button key={dept} onClick={() => setActiveRole(dept)} className="btn-gov-secondary" style={{ height: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-              <ShieldAlert size={32} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>{dept.toUpperCase()}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (loading && complaints.length === 0) return <div style={{ textAlign: 'center', padding: '5rem' }}><Loader2 className="animate-spin" size={48} color="var(--gov-navy)" /></div>;
-
-  const pieData = {
-    labels: stats.categories.map(c => c._id),
-    datasets: [{
-      data: stats.categories.map(c => c.count),
-      backgroundColor: ['#003366', '#1a4a7a', '#ff9933', '#138808', '#718096', '#2d3748'],
-      borderWidth: 1
-    }]
+  const getDeptName = (dept) => {
+    switch(dept) {
+      case 'Municipal Corporation': return t('form.depts.municipal') || 'Municipal';
+      case 'Road Department': return t('form.depts.road') || 'Road';
+      case 'Sewage Department': return t('form.depts.sewage') || 'Sewage';
+      case 'Waste Department': return t('form.depts.waste') || 'Waste';
+      case 'Water Department': return t('form.depts.water') || 'Water';
+      case 'Electric Department': return t('form.depts.electric') || 'Electric';
+      default: return dept;
+    }
   };
 
-  const currentViewDept = activeRole === 'Municipal Corporation'
-    ? (filterDepartment === 'All' ? 'All Departments' : filterDepartment)
-    : activeRole;
+  if (loading && complaints.length === 0) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <Loader2 className="animate-spin" size={48} color="var(--gov-navy)" />
+    </div>
+  );
 
   return (
-    <div className="animate-fade-in" style={{ padding: '2rem' }}>
-      <div className="header-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', height: 'auto' }}>
-        <div>
-          <h2 style={{ fontSize: '2rem', color: 'var(--gov-navy)' }}>{activeRole.toUpperCase()} PANEL</h2>
-          <p style={{ color: 'var(--gov-text-muted)', fontSize: '0.95rem' }}>Managing {filteredComplaints.length} public grievances in current jurisdiction.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-          {activeRole !== 'Municipal Corporation' && (
-            <div className="gov-card" style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.6rem', background: '#fff7ed', border: '1px solid #fed7aa', margin: 0 }}>
-              <div style={{ background: '#f97316', padding: '0.4rem', borderRadius: '50%', display: 'flex' }}>
-                <PlusCircle size={14} color="white" />
+    <div className="admin-view" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      {/* Dynamic Header */}
+      <div className="admin-header" style={{ 
+        background: 'var(--gov-navy)', 
+        padding: '3.5rem 2rem 5rem', 
+        color: 'white',
+        position: 'relative'
+      }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '8px' }}>
+                <LayoutDashboard size={20} />
               </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.65rem', color: '#f97316', fontWeight: 800, textTransform: 'uppercase' }}>Dept Rewards</p>
-                <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--gov-navy)' }}>
-                  {deptTokens.find(d => d.name === activeRole)?.tokens || 0} <span style={{ fontSize: '0.7rem' }}>TOKENS</span>
-                </p>
-              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.8 }}>
+                Official Administration Portal
+              </span>
             </div>
-          )}
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            {activeRole === 'Municipal Corporation' && (
-              <select className="form-input" value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)} style={{ width: '220px', fontWeight: 700 }}>
-                <option value="All">All Departments</option>
-                {DEPARTMENTS.filter(d => d !== 'Municipal Corporation').map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
+              {userDepartment ? getDeptName(userDepartment).toUpperCase() : "MASTER CONTROL"} PANEL
+            </h1>
+            <p style={{ marginTop: '0.5rem', fontSize: '1.1rem', opacity: 0.9, maxWidth: '600px', fontWeight: 500 }}>
+              {userDepartment 
+                ? `Overseeing ${filteredComplaints.length} grievances within the ${userDepartment} jurisdiction.`
+                : `Comprehensive overview of ${complaints.length} civic grievances across all departments.`}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            {isMunicipalAdmin && (
+              <button 
+                onClick={() => setPerfModalOpen(true)}
+                style={{ 
+                  background: 'rgba(255,255,255,0.1)', 
+                  backdropFilter: 'blur(10px)', 
+                  padding: '0.8rem 1.5rem', 
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              >
+                <BarChart3 size={18} />
+                Dept Performance
+              </button>
             )}
-            <button onClick={() => setActiveRole(null)} className="btn-gov-secondary" style={{ fontSize: '0.8rem' }}>SWITCH ROLE</button>
+            <div className="glass-card" style={{ 
+              background: 'rgba(255,255,255,0.1)', 
+              backdropFilter: 'blur(10px)', 
+              padding: '1.25rem 2rem', 
+              borderRadius: '20px',
+              border: '1px solid rgba(255,255,255,0.2)',
+              textAlign: 'center'
+            }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.8, marginBottom: '0.25rem', textTransform: 'uppercase' }}>Dept Rewards</p>
+              <h3 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 900 }}>{currentDeptTokens} <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>Tokens</span></h3>
+            </div>
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-        <div className="gov-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', borderLeft: '4px solid #f59e0b' }}>
-          <div style={{ color: '#f59e0b' }}><Clock size={32} /></div>
-          <div>
-            <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)' }}>PENDING</p>
-            <h3 style={{ fontSize: '1.75rem' }}>{filteredComplaints.filter(c => c.status === 'Pending').length}</h3>
-          </div>
+      <div className="container" style={{ marginTop: '-3rem', position: 'relative', zIndex: 10, paddingBottom: '4rem' }}>
+        {/* Quick Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+          {[
+            { label: 'Pending', count: (userDepartment && userDepartment !== 'Municipal Corporation' ? complaints.filter(c => c.department === userDepartment) : complaints).filter(c => c.status === 'Pending').length, icon: Clock, color: '#f59e0b', bg: '#fef3c7', filter: 'Pending' },
+            { label: 'In Progress', count: (userDepartment && userDepartment !== 'Municipal Corporation' ? complaints.filter(c => c.department === userDepartment) : complaints).filter(c => c.status === 'In Progress').length, icon: RefreshCw, color: '#3b82f6', bg: '#dbeafe', filter: 'In Progress' },
+            { label: 'Resolved', count: (userDepartment && userDepartment !== 'Municipal Corporation' ? complaints.filter(c => c.department === userDepartment) : complaints).filter(c => c.status === 'Resolved').length, icon: CheckCircle2, color: '#10b981', bg: '#dcfce7', filter: 'Resolved' },
+            { label: 'High Priority', count: (userDepartment && userDepartment !== 'Municipal Corporation' ? complaints.filter(c => c.department === userDepartment) : complaints).filter(c => c.priority === 'High').length, icon: ShieldAlert, color: '#ef4444', bg: '#fee2e2', filter: 'High' }
+          ].map((stat, idx) => (
+            <motion.div 
+              key={idx}
+              whileHover={{ y: -5, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setStatusFilter(statusFilter === stat.filter ? 'All' : stat.filter)}
+              style={{ 
+                background: 'white', 
+                padding: '1.5rem', 
+                borderRadius: '24px', 
+                boxShadow: statusFilter === stat.filter ? `0 10px 15px -3px ${stat.color}44` : '0 4px 6px -1px rgba(0,0,0,0.1)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                cursor: 'pointer',
+                border: statusFilter === stat.filter ? `2px solid ${stat.color}` : '2px solid transparent',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{stat.label}</p>
+                <h2 style={{ fontSize: '2rem', margin: 0, fontWeight: 900, color: 'var(--gov-navy)' }}>{stat.count}</h2>
+              </div>
+              <div style={{ background: stat.bg, padding: '1rem', borderRadius: '16px' }}>
+                <stat.icon color={stat.color} size={28} />
+              </div>
+            </motion.div>
+          ))}
         </div>
-        <div className="gov-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', borderLeft: '4px solid var(--gov-navy)' }}>
-          <div style={{ color: 'var(--gov-navy)' }}><RefreshCw size={32} /></div>
-          <div>
-            <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)' }}>IN PROGRESS</p>
-            <h3 style={{ fontSize: '1.75rem' }}>{filteredComplaints.filter(c => c.status === 'In Progress').length}</h3>
-          </div>
-        </div>
-        <div className="gov-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', borderLeft: '4px solid #10b981' }}>
-          <div style={{ color: '#10b981' }}><CheckCircle2 size={32} /></div>
-          <div>
-            <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)' }}>RESOLVED</p>
-            <h3 style={{ fontSize: '1.75rem' }}>{filteredComplaints.filter(c => c.status === 'Resolved').length}</h3>
-          </div>
-        </div>
-      </div>
 
-      <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '3rem' }}>
-        <div className="gov-card" style={{ padding: 0 }}>
-          <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--gov-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--gov-navy)' }}>Active Grievance Queue</h3>
-            <button onClick={fetchData} className="btn-gov-secondary" style={{ padding: '0.4rem' }}><RefreshCw size={16} /></button>
+
+        {/* Complaints Table */}
+        <div style={{ background: 'white', borderRadius: '32px', padding: '2.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--gov-navy)', margin: 0 }}>Active Complaint Queue</h2>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              {isMunicipalAdmin && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '1rem' }}>
+                  <Filter size={16} color="var(--gov-text-muted)" />
+                  <select 
+                    value={selectedDeptFilter}
+                    onChange={(e) => setSelectedDeptFilter(e.target.value)}
+                    style={{ 
+                      padding: '0.6rem 1rem', 
+                      borderRadius: '12px', 
+                      border: '1px solid #e2e8f0', 
+                      fontSize: '0.85rem', 
+                      fontWeight: 700, 
+                      color: 'var(--gov-navy)',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="All">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept} value={dept}>{getDeptName(dept)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <button onClick={fetchData} className="btn-gov-secondary" style={{ padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '12px' }}>
+                <RefreshCw size={16} /> Sync Data
+              </button>
+            </div>
           </div>
+
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.75rem' }}>
               <thead>
-                <tr style={{ background: '#f8fafc', textAlign: 'left', fontSize: '0.75rem', color: 'var(--gov-text-muted)' }}>
-                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>ID / CASE</th>
-                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>CATEGORY</th>
-                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>PRIORITY</th>
-                  {activeRole === 'Municipal Corporation' && <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>DEPT</th>}
-                  <th style={{ padding: '1.25rem 2rem', fontWeight: 800 }}>STATUS / PROOF</th>
+                <tr style={{ textAlign: 'left' }}>
+                  {['ID / CASE', 'CATEGORY', 'PRIORITY', 'DEPARTMENT', 'STATUS / PROOF'].map(h => (
+                    <th key={h} style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', textTransform: 'uppercase' }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredComplaints.map(c => (
-                  <tr key={c._id} style={{ borderBottom: '1px solid var(--gov-border)' }}>
-                    <td style={{ padding: '1.25rem 2rem' }}>
-                      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        {c.imageUrl && (
-                          <div
-                            onClick={() => setViewImageModal({ open: true, image: `http://localhost:5000${c.imageUrl}`, title: 'Reported Incident' })}
-                            style={{ width: '45px', height: '45px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--gov-border)', cursor: 'pointer' }}
-                          >
-                            <img src={`http://localhost:5000${c.imageUrl}`} alt="Incident" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                        )}
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>#{c._id.slice(-6).toUpperCase()}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--gov-text-muted)' }}>{c.text.substring(0, 30)}...</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '1.25rem 2rem', fontSize: '0.85rem', fontWeight: 600 }}>{c.category || 'General'}</td>
-                    <td style={{ padding: '1.25rem 2rem' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: c.priority === 'High' ? '#dc2626' : c.priority === 'Medium' ? '#f59e0b' : '#10b981' }}>{c.priority.toUpperCase()}</span>
-                    </td>
-                    {activeRole === 'Municipal Corporation' && <td style={{ padding: '1.25rem 2rem', fontSize: '0.8rem', fontWeight: 600 }}>{c.department}</td>}
-                    <td style={{ padding: '1.25rem 2rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <select className="form-input" value={c.status} onChange={(e) => handleStatusChange(c._id, e.target.value)} style={{ padding: '0.4rem', fontSize: '0.75rem', fontWeight: 800, width: '130px' }}>
-                          <option value="Pending">PENDING</option>
-                          <option value="In Progress">IN PROGRESS</option>
-                          <option value="Resolved">RESOLVED</option>
-                        </select>
-
-                        {c.resolutionImage && (
-                          <button
-                            className="btn-gov-secondary"
-                            style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', width: 'fit-content' }}
-                            onClick={() => setViewImageModal({
-                              open: true,
-                              image: c.resolutionImage,
-                              originalImage: c.imageUrl ? `http://localhost:5000${c.imageUrl}` : null,
-                              title: 'Resolution Verification',
-                              isAi: c.isAiGenerated,
-                              aiConfidence: c.aiDetectionConfidence
-                            })}
-                          >
-                            VIEW PROOF
-                          </button>
-                          {c.isAiGenerated && (
-                          <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 700 }}>
-                            <ShieldAlert size={14} />
-                            <span>AI Generated Image</span>
-                          </div>
-                        )}
-                        {!c.isMatch && (
-                          <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--warning)', fontSize: '0.75rem', fontWeight: 700 }}>
-                            <AlertTriangle size={14} />
-                            <span>Problem Match: {c.similarityScore}%</span>
-                          </div>
-                        )}
-                      </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Charts */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div className="glass" style={{ padding: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Issue Categories</h3>
-            <div style={{ height: '250px', display: 'flex', justifyContent: 'center' }}>
-              <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }} />
-            </div>
-          </div>
-
-          <div className="gov-card">
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--gov-navy)', marginBottom: '2rem' }}>Incident Classification</h3>
-            <div style={{ height: '300px' }}>
-              <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 700, size: 11 } } } } }} />
-            </div>
-          </div>
-        </div>
-
-        {resolutionModal.open && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
-            <div className="gov-card" style={{ maxWidth: '450px', width: '90%', textAlign: 'center' }}>
-              <h3 style={{ color: 'var(--gov-navy)', marginBottom: '1rem' }}>Resolution Verification</h3>
-              <p style={{ color: 'var(--gov-text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>Capture photographic proof of the resolved issue.</p>
-
-              <div className="form-group" style={{ marginBottom: '2rem' }}>
-                {photoPreview ? (
-                  <div style={{ position: 'relative', height: '220px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--gov-border)' }}>
-                    <img src={photoPreview} alt="Resolution" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    {(aiDetection.loading || similarity.loading || resolutionLocation.fetching) && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <Loader2 className="animate-spin" color="var(--gov-navy)" />
-                        <p style={{ fontSize: '0.7rem', fontWeight: 800, marginTop: '0.5rem' }}>AI & GPS VERIFYING...</p>
-                      </div>
-                    )}
-                  </div>
+                {filteredComplaints.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '4rem', color: 'var(--gov-text-muted)', fontWeight: 600 }}>No grievances found in your jurisdiction.</td>
+                  </tr>
                 ) : (
-                  <label className="btn-gov-primary" style={{ width: '100%', cursor: 'pointer', height: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem' }}>
-                    <Camera size={32} />
-                    CAPTURE EVIDENCE
-                    <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhotoCapture} style={{ display: 'none' }} />
+                  filteredComplaints.map((c) => (
+                    <motion.tr 
+                      key={c._id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      style={{ background: '#f8fafc', borderRadius: '16px', overflow: 'hidden' }}
+                    >
+                      <td style={{ padding: '1.25rem', borderRadius: '16px 0 0 16px' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--gov-navy)' }}>#{c._id.slice(-8).toUpperCase()}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--gov-text-muted)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.text}</div>
+                      </td>
+                      <td style={{ padding: '1.25rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.4rem 0.8rem', background: '#e2e8f0', borderRadius: '8px' }}>{c.category}</span>
+                      </td>
+                      <td style={{ padding: '1.25rem' }}>
+                        <span style={{ 
+                          fontSize: '0.75rem', 
+                          fontWeight: 800, 
+                          color: c.priority === 'High' ? '#ef4444' : c.priority === 'Medium' ? '#f59e0b' : '#3b82f6'
+                        }}>
+                          {c.priority.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
+                          <Building2 size={14} /> {getDeptName(c.department)}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1.25rem', borderRadius: '0 16px 16px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          {isMunicipalAdmin ? (
+                            <div style={{ 
+                              padding: '0.6rem 1.25rem', 
+                              borderRadius: '14px', 
+                              fontSize: '0.75rem', 
+                              fontWeight: 900,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.6rem',
+                              minWidth: '130px',
+                              letterSpacing: '0.02em',
+                              background: c.status === 'Resolved' ? '#dcfce7' : c.status === 'In Progress' ? '#dbeafe' : '#fffbeb',
+                              color: c.status === 'Resolved' ? '#15803d' : c.status === 'In Progress' ? '#1d4ed8' : '#b45309',
+                              border: `1px solid ${c.status === 'Resolved' ? 'rgba(21, 128, 61, 0.2)' : c.status === 'In Progress' ? 'rgba(29, 78, 216, 0.2)' : 'rgba(180, 83, 9, 0.2)'}`
+                            }}>
+                              {c.status === 'Resolved' && <CheckCircle2 size={14} />}
+                              {c.status === 'In Progress' && <RefreshCw size={14} className="animate-spin" />}
+                              {c.status === 'Pending' && <Clock size={14} />}
+                              {c.status.toUpperCase()}
+                            </div>
+                          ) : (
+                            <select 
+                              value={c.status}
+                              onChange={(e) => handleStatusChange(c._id, e.target.value)}
+                              style={{ 
+                                padding: '0.5rem 1rem', 
+                                borderRadius: '10px', 
+                                border: '1px solid #cbd5e0', 
+                                fontSize: '0.8rem', 
+                                fontWeight: 700,
+                                background: c.status === 'Resolved' ? '#dcfce7' : c.status === 'In Progress' ? '#dbeafe' : 'white',
+                                color: c.status === 'Resolved' ? '#166534' : c.status === 'In Progress' ? '#1e40af' : 'inherit',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Resolved">Resolved</option>
+                            </select>
+                          )}
+                          
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {c.imageUrl && (
+                              <button 
+                                onClick={() => setViewImageModal({ open: true, image: c.imageUrl, title: 'Original Grievance', isAi: false })}
+                                className="btn-gov-secondary" style={{ padding: '0.5rem', borderRadius: '10px' }}
+                              >
+                                <Camera size={16} />
+                              </button>
+                            )}
+                            {c.resolutionImage && (
+                              <button 
+                                onClick={() => setViewImageModal({ 
+                                  open: true, 
+                                  image: c.resolutionImage, 
+                                  originalImage: c.imageUrl,
+                                  title: 'Resolution Proof', 
+                                  isAi: c.isAiGenerated, 
+                                  aiConfidence: c.aiDetectionConfidence,
+                                  similarity: c.similarityScore,
+                                  isMatch: c.isMatch
+                                })}
+                                className="btn-gov-primary" style={{ padding: '0.5rem', borderRadius: '10px' }}
+                              >
+                                <CheckCircle2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Resolution Modal */}
+      <AnimatePresence>
+        {resolutionModal.open && (
+          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyCenter: 'center', padding: '2rem' }}>
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="gov-card" style={{ maxWidth: '600px', width: '100%', margin: 'auto', padding: '2.5rem' }}
+            >
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.5rem' }}>Submit Resolution Proof</h2>
+              <p style={{ color: 'var(--gov-text-muted)', marginBottom: '2rem' }}>AI and GPS verification will be performed on the uploaded image.</p>
+              
+              <div style={{ marginBottom: '2rem' }}>
+                {!photoPreview ? (
+                  <label style={{ display: 'block', border: '2px dashed #cbd5e0', borderRadius: '20px', padding: '4rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s ease' }}>
+                    <input type="file" accept="image/*" onChange={handlePhotoCapture} style={{ display: 'none' }} />
+                    <Camera size={48} color="#cbd5e0" style={{ marginBottom: '1rem' }} />
+                    <p style={{ fontWeight: 700, color: 'var(--gov-navy)' }}>Click to Upload Resolution Image</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--gov-text-muted)' }}>GPS and AI check will follow</p>
                   </label>
+                ) : (
+                  <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden' }}>
+                    <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '300px', objectFit: 'cover' }} />
+                    <button onClick={() => setPhotoPreview(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', padding: '0.5rem' }}>
+                      <X size={20} />
+                    </button>
+                  </div>
                 )}
               </div>
 
-              {aiDetection.checked && (
-                <div style={{ marginBottom: '1.5rem', textAlign: 'left', fontSize: '0.8rem', padding: '1rem', background: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span>AI Detection:</span>
-                    <span style={{ color: aiDetection.isAi ? '#dc2626' : '#10b981', fontWeight: 800 }}>
-                      {aiDetection.isAi ? `MANIPULATED (${aiDetection.confidence}%)` : 'AUTHENTIC'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span>Incident Match:</span>
-                    <span style={{ color: similarity.isMatch ? '#10b981' : '#f59e0b', fontWeight: 800 }}>
-                      {similarity.isMatch ? `MATCH (${similarity.score}%)` : `LOW MATCH (${similarity.score}%)`}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>GPS Verification:</span>
-                    <span style={{ color: resolutionLocation.lat ? '#10b981' : '#dc2626', fontWeight: 800 }}>
-                      {resolutionLocation.lat ? 'COORDINATES CAPTURED' : 'LOCATION REQUIRED'}
-                    </span>
-                  </div>
+              {/* Verification Feedback */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2.5rem' }}>
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                  <p style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--gov-text-muted)', marginBottom: '0.5rem' }}>AI Integrity</p>
+                  {aiDetection.loading ? <Loader2 className="animate-spin" size={16} /> : (
+                    aiDetection.checked ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: aiDetection.isAi ? '#ef4444' : '#10b981' }}>
+                        {aiDetection.isAi ? <ShieldAlert size={16} /> : <BadgeCheck size={16} />}
+                        <span style={{ fontSize: '0.9rem', fontWeight: 800 }}>{aiDetection.isAi ? 'AI DETECTED' : 'AUTHENTIC'}</span>
+                      </div>
+                    ) : <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Pending...</span>
+                  )}
                 </div>
-              )}
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                  <p style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--gov-text-muted)', marginBottom: '0.5rem' }}>Location Match</p>
+                  {resolutionLocation.fetching ? <Loader2 className="animate-spin" size={16} /> : (
+                    resolutionLocation.lat ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981' }}>
+                        <MapPin size={16} />
+                        <span style={{ fontSize: '0.9rem', fontWeight: 800 }}>VERIFIED</span>
+                      </div>
+                    ) : <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Pending...</span>
+                  )}
+                </div>
+              </div>
 
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <button className="btn-gov-secondary" style={{ flex: 1 }} onClick={() => { setResolutionModal({ open: false, complaintId: null }); setPhotoPreview(null); setAiDetection({ checked: false, loading: false }); setSimilarity({ checked: false, loading: false }); }}>CANCEL</button>
-                <button
-                  className="btn-gov-primary"
-                  style={{ flex: 1 }}
-                  onClick={submitResolution}
-                  disabled={!photoPreview || aiDetection.loading || similarity.loading || aiDetection.isAi}
+                <button onClick={() => setResolutionModal({ open: false, complaintId: null })} className="btn-gov-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button 
+                  onClick={submitResolution} 
+                  disabled={!photoPreview || aiDetection.loading || aiDetection.isAi}
+                  className="btn-gov-primary" style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 >
-                  RESOLVE CASE
+                  <Check size={20} /> Confirm Resolution
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
+      </AnimatePresence>
 
+      {/* View Image Modal */}
+      <AnimatePresence>
         {viewImageModal.open && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000, padding: '1rem' }} onClick={() => setViewImageModal({ open: false, image: null, originalImage: null, title: '', isAi: false, aiConfidence: 0 })}>
-            <div className="gov-card" style={{ padding: '1.5rem', maxWidth: viewImageModal.originalImage ? '900px' : '500px', width: '95%', position: 'relative' }} onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ margin: 0, color: 'var(--gov-navy)' }}>{viewImageModal.title}</h3>
-                <button onClick={() => setViewImageModal({ open: false, image: null, originalImage: null, title: '', isAi: false, aiConfidence: 0 })} style={{ background: 'none', border: 'none', color: 'var(--gov-navy)', cursor: 'pointer' }}><X size={24} /></button>
-              </div>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: viewImageModal.originalImage ? '1fr 1fr' : '1fr',
-                gap: '1.5rem',
-                maxHeight: '60vh',
-                overflowY: 'auto'
-              }}>
-                {viewImageModal.originalImage && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#f59e0b' }}>ORIGINAL COMPLAINT</div>
-                    <img src={viewImageModal.originalImage} alt="Before" style={{ width: '100%', borderRadius: '4px', border: '1px solid var(--gov-border)' }} />
+          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'relative', maxWidth: viewImageModal.originalImage ? '1000px' : '600px', width: '100%' }}>
+                <button onClick={() => setViewImageModal({ open: false })} style={{ position: 'absolute', top: '-3rem', right: 0, color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <X size={32} />
+                </button>
+                
+                <div style={{ background: 'white', borderRadius: '32px', padding: '2rem' }}>
+                  <h3 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', fontWeight: 900, color: 'var(--gov-navy)' }}>{viewImageModal.title}</h3>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: viewImageModal.originalImage ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
+                    {viewImageModal.originalImage && (
+                      <div>
+                        <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>Original Grievance</p>
+                        <img src={`http://localhost:5000${viewImageModal.originalImage}`} style={{ width: '100%', borderRadius: '16px', height: '400px', objectFit: 'cover' }} />
+                      </div>
+                    )}
+                    <div>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>{viewImageModal.originalImage ? 'Resolution Proof' : 'Image Evidence'}</p>
+                      <img src={viewImageModal.image.startsWith('data:') ? viewImageModal.image : `http://localhost:5000${viewImageModal.image}`} style={{ width: '100%', borderRadius: '16px', height: '400px', objectFit: 'cover' }} />
+                    </div>
                   </div>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#10b981' }}>{viewImageModal.originalImage ? 'RESOLUTION PROOF' : 'IMAGE PREVIEW'}</div>
-                  <img src={viewImageModal.image} alt="After" style={{ width: '100%', borderRadius: '4px', border: '1px solid var(--gov-border)' }} />
-                </div>
-              </div>
 
-              {viewImageModal.isAi && (
-                <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#fef2f2', border: '1px solid #ef4444', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#dc2626' }}>
-                  <ShieldAlert size={20} />
-                  <span style={{ fontWeight: 800, fontSize: '0.8rem' }}>AI GENERATED IMAGE DETECTED ({viewImageModal.aiConfidence}%)</span>
+                  {viewImageModal.title === 'Resolution Proof' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '2rem' }}>
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>AI Integrity</p>
+                        <div style={{ color: viewImageModal.isAi ? '#ef4444' : '#10b981', fontWeight: 800 }}>{viewImageModal.isAi ? 'FAILED' : 'AUTHENTIC'}</div>
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Similarity</p>
+                        <div style={{ color: 'var(--gov-navy)', fontWeight: 800 }}>{(viewImageModal.similarity * 100).toFixed(0)}% Match</div>
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>GPS Status</p>
+                        <div style={{ color: '#10b981', fontWeight: 800 }}>VERIFIED</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              <button className="btn-gov-primary" style={{ marginTop: '1.5rem', width: '100%' }} onClick={() => setViewImageModal({ open: false, image: null, originalImage: null, title: '', isAi: false, aiConfidence: 0 })}>CLOSE</button>
-            </div>
+             </motion.div>
           </div>
         )}
-      </div>
-      );
+      </AnimatePresence>
+      
+      {/* Performance Modal */}
+      <AnimatePresence>
+        {perfModalOpen && (
+          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              style={{ background: '#f8fafc', maxWidth: '1200px', width: '100%', borderRadius: '32px', padding: '3rem', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
+            >
+              <button onClick={() => setPerfModalOpen(false)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#e2e8f0', border: 'none', borderRadius: '50%', padding: '0.5rem', cursor: 'pointer' }}>
+                <X size={24} color="var(--gov-navy)" />
+              </button>
+
+              <div style={{ marginBottom: '2.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                  <TrendingUp size={32} color="var(--gov-navy)" />
+                  <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--gov-navy)', margin: 0 }}>Departmental Performance</h2>
+                </div>
+                <p style={{ color: 'var(--gov-text-muted)', fontWeight: 500 }}>Comprehensive efficiency and reward metrics across all civic departments.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                {departments.map(dept => {
+                  const dStats = getDeptStats(dept);
+                  return (
+                    <motion.div 
+                      key={dept} 
+                      whileHover={{ y: -5 }}
+                      style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                        <div>
+                          <h4 style={{ margin: 0, color: 'var(--gov-navy)', fontWeight: 800, fontSize: '1.1rem' }}>{getDeptName(dept)}</h4>
+                          <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: 'var(--gov-text-muted)', fontWeight: 700 }}>OPERATIONAL STATUS</p>
+                        </div>
+                        <div style={{ background: '#fef08a', padding: '0.4rem 1rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900, color: '#854d0e', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <TrendingUp size={14} /> {dStats.tokens} TOKENS
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center' }}>
+                        <div style={{ background: '#fffbeb', padding: '1rem', borderRadius: '16px' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f59e0b' }}>{dStats.pending}</div>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#92400e' }}>PENDING</div>
+                        </div>
+                        <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '16px' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6' }}>{dStats.inProgress}</div>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#1e40af' }}>IN PROGRESS</div>
+                        </div>
+                        <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '16px' }}>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#10b981' }}>{dStats.resolved}</div>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#166534' }}>RESOLVED</div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '1.5rem', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div 
+                          style={{ 
+                            height: '100%', 
+                            background: '#10b981', 
+                            width: `${(dStats.resolved / (dStats.pending + dStats.inProgress + dStats.resolved || 1)) * 100}%`,
+                            transition: 'width 1s ease-out'
+                          }} 
+                        />
+                      </div>
+                      <p style={{ margin: '0.5rem 0 0', fontSize: '0.65rem', color: 'var(--gov-text-muted)', fontWeight: 700, textAlign: 'right' }}>
+                        COMPLETION RATE: {((dStats.resolved / (dStats.pending + dStats.inProgress + dStats.resolved || 1)) * 100).toFixed(0)}%
+                      </p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
 
-      export default Dashboard;
+const Building2 = ({ size }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>;
+const BadgeCheck = ({ size }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>;
+
+export default Dashboard;

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck, RefreshCw } from 'lucide-react';
 import MapPicker from './MapPicker';
 
 const GrievanceForm = ({ userAadhar, onSuccess }) => {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const [location, setLocation] = useState('');
   const [coords, setCoords] = useState({ lat: null, lon: null });
@@ -140,29 +142,29 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
         <div style={{ width: '80px', height: '80px', background: '#dcfce7', color: '#166534', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
           <CheckCircle2 size={48} />
         </div>
-        <h2 style={{ fontSize: '2rem', color: 'var(--gov-navy)', marginBottom: '1rem' }}>Grievance Registered Successfully</h2>
+        <h2 style={{ fontSize: '2rem', color: 'var(--gov-navy)', marginBottom: '1rem' }}>{t('form.success')}</h2>
         <p style={{ color: 'var(--gov-text-muted)', fontSize: '1.1rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem' }}>
-          Your application has been received and assigned a unique tracking ID. The nodal department has been notified for further action.
+          {t('form.subTitle')}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '2rem', background: 'var(--gov-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--gov-border)', maxWidth: '500px', margin: '0 auto 3rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ textAlign: 'left' }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>TRACKING ID (SHORT)</p>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>{t('track.results').toUpperCase()} (SHORT)</p>
               <p style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--gov-navy)' }}>#{result._id.slice(-8).toUpperCase()}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>ASSIGNED DEPT</p>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>{t('admin.dept').toUpperCase()}</p>
               <p style={{ fontWeight: 800, fontSize: '1rem', color: '#1e40af' }}>{result.department.toUpperCase()}</p>
             </div>
           </div>
           <div style={{ height: '1px', background: 'var(--gov-border)' }}></div>
           <div style={{ textAlign: 'left' }}>
-            <p style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>FULL REFERENCE ID (FOR PRECISE TRACKING)</p>
+            <p style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>{t('form.fullRefId')}</p>
             <p style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--gov-text-muted)', background: '#f1f5f9', padding: '0.5rem', borderRadius: '4px', wordBreak: 'break-all' }}>{result._id}</p>
           </div>
         </div>
         <div style={{ marginTop: '3rem' }}>
-          <button className="btn-gov-primary" onClick={() => setResult(null)}>SUBMIT NEW GRIEVANCE</button>
+          <button className="btn-gov-primary" onClick={() => setResult(null)}>{t('form.submit')}</button>
         </div>
       </div>
     );
@@ -171,10 +173,10 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
   return (
     <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem' }}>
       <div className="gov-card">
-        <h3 style={{ marginBottom: '2rem', borderBottom: '2px solid var(--gov-bg)', paddingBottom: '1rem', color: 'var(--gov-navy)' }}>Grievance Details</h3>
+        <h3 style={{ marginBottom: '2rem', borderBottom: '2px solid var(--gov-bg)', paddingBottom: '1rem', color: 'var(--gov-navy)' }}>{t('form.detailsTitle')}</h3>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Evidence Upload (Optional)</label>
+            <label className="form-label">{t('form.upload')}</label>
             {!imagePreview ? (
               <div 
                 onClick={() => fileInputRef.current.click()}
@@ -186,8 +188,8 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
                 onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--gov-border)'}
               >
                 <UploadCloud size={48} color="var(--gov-text-muted)" style={{ marginBottom: '1rem' }} />
-                <p style={{ fontWeight: 700, color: 'var(--gov-text-muted)' }}>Click to upload or drag image here</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--gov-text-muted)', marginTop: '0.5rem' }}>JPG, PNG up to 5MB</p>
+                <p style={{ fontWeight: 700, color: 'var(--gov-text-muted)' }}>{t('form.upload')}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--gov-text-muted)', marginTop: '0.5rem' }}>{t('form.fileTypes')}</p>
                 <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageChange} style={{ display: 'none' }} />
               </div>
             ) : (
@@ -203,7 +205,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
                 {analyzingImage && (
                   <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <Loader2 className="animate-spin" size={32} color="var(--gov-navy)" />
-                    <p style={{ fontWeight: 800, marginTop: '1rem', color: 'var(--gov-navy)', fontSize: '0.9rem' }}>AI ANALYZING INCIDENT...</p>
+                    <p style={{ fontWeight: 800, marginTop: '1rem', color: 'var(--gov-navy)', fontSize: '0.9rem' }}>{t('form.analyzing')}</p>
                   </div>
                 )}
               </div>
@@ -211,11 +213,11 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Detailed Description</label>
+            <label className="form-label">{t('form.description')}</label>
             <textarea 
               className="form-input" 
               style={{ height: '150px', resize: 'none' }}
-              placeholder="Describe the issue in detail (e.g., exact nature of problem, nearby landmarks)..."
+              placeholder={t('form.description')}
               value={text}
               onChange={(e) => setText(e.target.value)}
               required={!image}
@@ -224,7 +226,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
 
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Incident Location
+              {t('form.location')}
               <button 
                 type="button" 
                 onClick={fetchExactLocation}
@@ -233,7 +235,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
                 disabled={fetchingLocation}
               >
                 {fetchingLocation ? <Loader2 className="animate-spin" size={12} /> : <RefreshCw size={12} />} 
-                {fetchingLocation ? 'GETTING GPS...' : 'REFRESH GPS'}
+                {fetchingLocation ? t('form.gpsRefreshing') : t('form.gpsRefresh')}
               </button>
             </label>
             <div style={{ position: 'relative' }}>
@@ -242,7 +244,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
                 type="text" 
                 className="form-input" 
                 style={{ paddingLeft: '3rem' }}
-                placeholder="Searching exact location via GPS..."
+                placeholder={t('form.location')}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 required
@@ -250,49 +252,55 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
             </div>
             {coords.lat && (
               <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', fontWeight: 800 }}>
-                ✓ EXACT COORDINATES CAPTURED: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
+                ✓ {t('form.coordsCaptured')}: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
               </p>
             )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
             <div className="form-group">
-              <label className="form-label">Nodal Department</label>
+              <label className="form-label">{t('admin.dept')}</label>
               <select 
                 className="form-input"
                 value={selectedDept}
                 onChange={(e) => setSelectedDept(e.target.value)}
                 style={{ fontWeight: 600 }}
               >
-                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                <option value="Municipal Corporation">{t('form.depts.municipal')}</option>
+                <option value="Road Department">{t('form.depts.road')}</option>
+                <option value="Sewage Department">{t('form.depts.sewage')}</option>
+                <option value="Waste Department">{t('form.depts.waste')}</option>
+                <option value="Water Department">{t('form.depts.water')}</option>
+                <option value="Electric Department">{t('form.depts.electric')}</option>
+                <option value="Public Works Department">{t('form.depts.pwd')}</option>
               </select>
             </div>
           </div>
 
           <button type="submit" className="btn-gov-primary" style={{ width: '100%', justifyContent: 'center', padding: '1rem' }} disabled={loading}>
-            {loading ? <Loader2 className="animate-spin" /> : <><Send size={20} /> SUBMIT FORM</>}
+            {loading ? <Loader2 className="animate-spin" /> : <><Send size={20} /> {t('form.submit')}</>}
           </button>
         </form>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <div className="gov-card">
-          <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gov-navy)', marginBottom: '1.5rem', textTransform: 'uppercase' }}>Precise Geo-Tagging</h4>
+          <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gov-navy)', marginBottom: '1.5rem', textTransform: 'uppercase' }}>{t('form.geoTagging')}</h4>
           <div style={{ height: '280px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--gov-border)' }}>
             <MapPicker onLocationSelect={handleLocationSelect} />
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--gov-text-muted)', marginTop: '1rem' }}>
-            * Location data helps us dispatch the field team to the exact spot.
+            {t('form.geoSub')}
           </p>
         </div>
 
         <div className="ai-feedback-box">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <ShieldCheck size={20} color="var(--gov-navy)" />
-            <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gov-navy)', margin: 0, textTransform: 'uppercase' }}>AI Verification System</h4>
+            <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gov-navy)', margin: 0, textTransform: 'uppercase' }}>{t('form.aiVerification')}</h4>
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--gov-text-main)', lineHeight: '1.6' }}>
-            Once you upload an image, our AI will automatically suggest the <strong>Department</strong> and <strong>Category</strong> of the issue to reduce manual entry errors.
+            {t('form.aiVerificationSub')}
           </p>
         </div>
       </div>

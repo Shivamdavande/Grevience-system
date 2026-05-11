@@ -12,10 +12,18 @@ const FormData = require('form-data');
 
 const Grievance = require('./models/Grievance');
 const Department = require('./models/Department');
+const User = require('./models/User');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -163,6 +171,79 @@ app.post('/api/auth/verify-otp', async (req, res) => {
   } catch (err) {
     console.error('Verify OTP Error:', err);
     res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
+
+// Departmental Employee Auth Routes
+app.post('/api/dept/register', async (req, res) => {
+  console.log('Register Request Body:', req.body);
+  const { fullName, email, employeeId, department, designation, mobile, password, officeLocation } = req.body;
+
+  try {
+    // Check if user already exists
+    let user = await User.findOne({ $or: [{ email }, { employeeId }] });
+    if (user) {
+      return res.status(400).json({ error: 'User already exists with this email or Employee ID' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    user = new User({
+      fullName,
+      email,
+      employeeId,
+      department,
+      designation,
+      mobile,
+      password: hashedPassword,
+      officeLocation
+    });
+
+    await user.save();
+
+    const payload = { user: { id: user.id, department: user.department, fullName: user.fullName } };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+    res.status(201).json({ token, user: { id: user.id, fullName: user.fullName, department: user.department } });
+  } catch (err) {
+    console.error('Dept Register Error Full:', err);
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(val => val.message);
+      return res.status(400).json({ error: messages.join(', ') });
+    }
+    if (err.code === 11000) {
+      return res.status(400).json({ error: 'Duplicate field value entered' });
+    }
+    res.status(500).json({ error: 'Server Error: ' + err.message });
+  }
+});
+
+app.post('/api/dept/login', async (req, res) => {
+  const { emailOrId, password } = req.body;
+
+  try {
+    const user = await User.findOne({ 
+      $or: [{ email: emailOrId }, { employeeId: emailOrId }] 
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid Credentials' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid Credentials' });
+    }
+
+    const payload = { user: { id: user.id, department: user.department, fullName: user.fullName } };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+    res.json({ token, user: { id: user.id, fullName: user.fullName, department: user.department } });
+  } catch (err) {
+    console.error('Dept Login Error:', err);
+    res.status(500).json({ error: 'Server Error' });
   }
 });
 

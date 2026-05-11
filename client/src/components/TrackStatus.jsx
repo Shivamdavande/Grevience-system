@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Clock, CheckCircle2, RefreshCw, AlertCircle, FileText, MapPin, Calendar, Hash } from 'lucide-react';
 
 const TrackStatus = () => {
+  const { t } = useTranslation();
   const [trackingId, setTrackingId] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -17,14 +19,13 @@ const TrackStatus = () => {
     setError('');
     setResult(null);
 
-    // Clean tracking ID (strip # if present)
     const cleanId = trackingId.startsWith('#') ? trackingId.substring(1) : trackingId;
 
     try {
       const response = await axios.get(`http://localhost:5000/api/complaints/${cleanId}`);
       setResult(response.data);
     } catch (err) {
-      setError('Unable to find any record with the provided Tracking ID. Please double-check and try again.');
+      setError(t('track.notFound'));
     } finally {
       setLoading(false);
     }
@@ -32,9 +33,9 @@ const TrackStatus = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'Pending': return <span className="badge badge-pending">Pending</span>;
-      case 'In Progress': return <span className="badge badge-progress">In Progress</span>;
-      case 'Resolved': return <span className="badge badge-resolved">Resolved</span>;
+      case 'Pending': return <span className="badge badge-pending">{t('admin.pending')}</span>;
+      case 'In Progress': return <span className="badge badge-progress">{t('admin.inProgress')}</span>;
+      case 'Resolved': return <span className="badge badge-resolved">{t('admin.resolved')}</span>;
       default: return <span className="badge">{status}</span>;
     }
   };
@@ -42,7 +43,7 @@ const TrackStatus = () => {
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       <div className="gov-card" style={{ marginBottom: '3rem', borderTop: '4px solid var(--gov-navy)' }}>
-        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--gov-navy)' }}>Track Your Application</h3>
+        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', color: 'var(--gov-navy)' }}>{t('track.title')}</h3>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem' }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <Hash size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
@@ -50,14 +51,14 @@ const TrackStatus = () => {
               type="text"
               className="form-input"
               style={{ paddingLeft: '3.5rem', fontWeight: 600 }}
-              placeholder="ENTER TRACKING ID (e.g. 64b81c...)"
+              placeholder={t('track.placeholder')}
               value={trackingId}
               onChange={(e) => setTrackingId(e.target.value.trim())}
               required
             />
           </div>
           <button type="submit" className="btn-gov-primary" disabled={loading}>
-            {loading ? <RefreshCw className="animate-spin" size={18} /> : 'TRACK STATUS'}
+            {loading ? <RefreshCw className="animate-spin" size={18} /> : t('track.btn')}
           </button>
         </form>
         {error && (
@@ -74,13 +75,16 @@ const TrackStatus = () => {
             animate={{ opacity: 1, y: 0 }}
             className="gov-card"
           >
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--gov-navy)', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--gov-border)', paddingBottom: '1rem' }}>
+              <CheckCircle2 size={24} /> {t('track.results')}
+            </h3>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem', borderBottom: '1px solid var(--gov-border)', paddingBottom: '2rem' }}>
               <div>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Grievance ID</p>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{t('track.results')}</p>
                 <h2 style={{ fontSize: '1.75rem', color: 'var(--gov-navy)', fontWeight: 800 }}>#{result._id.toUpperCase()}</h2>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>Current Status</p>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>{t('track.status')}</p>
                 <div style={{ transform: 'scale(1.2)', transformOrigin: 'right' }}>
                   {getStatusBadge(result.status)}
                 </div>
@@ -90,34 +94,34 @@ const TrackStatus = () => {
             <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem' }}>
               <div>
                 <div className="form-group" style={{ marginBottom: '2rem' }}>
-                  <label className="form-label">Issue Summary</label>
+                  <label className="form-label">{t('track.summary')}</label>
                   <p style={{ fontSize: '1.1rem', fontWeight: 500, lineHeight: '1.6' }}>{result.text}</p>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                   <div>
-                    <label className="form-label">Category</label>
+                    <label className="form-label">{t('track.category')}</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
                       <FileText size={16} color="var(--gov-navy)" />
                       {result.category || 'General'}
                     </div>
                   </div>
                   <div>
-                    <label className="form-label">Priority</label>
+                    <label className="form-label">{t('track.priority')}</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, color: result.priority === 'High' ? '#dc2626' : 'inherit' }}>
                       <AlertCircle size={16} />
                       {result.priority || 'Medium'}
                     </div>
                   </div>
                   <div>
-                    <label className="form-label">Department</label>
+                    <label className="form-label">{t('track.dept')}</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
                       <RefreshCw size={16} color="var(--gov-navy)" />
                       {result.department}
                     </div>
                   </div>
                   <div>
-                    <label className="form-label">Submitted On</label>
+                    <label className="form-label">{t('track.date')}</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
                       <Calendar size={16} color="var(--gov-navy)" />
                       {new Date(result.createdAt).toLocaleDateString()}
@@ -126,7 +130,7 @@ const TrackStatus = () => {
                 </div>
 
                 <div className="form-group" style={{ marginTop: '2.5rem' }}>
-                  <label className="form-label">Incident Location</label>
+                  <label className="form-label">{t('track.location')}</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500, color: 'var(--gov-text-muted)' }}>
                     <MapPin size={16} />
                     {result.location}
@@ -135,20 +139,20 @@ const TrackStatus = () => {
               </div>
 
               <div>
-                <label className="form-label">Incident Evidence</label>
+                <label className="form-label">{t('track.evidence')}</label>
                 {result.imageUrl ? (
                   <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--gov-border)', background: 'var(--gov-bg)' }}>
                     <img src={`http://localhost:5000${result.imageUrl}`} alt="Incident" style={{ width: '100%', height: '240px', objectFit: 'cover' }} />
                   </div>
                 ) : (
                   <div style={{ height: '240px', background: 'var(--gov-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)', border: '1px dashed var(--gov-border)', color: 'var(--gov-text-muted)', fontSize: '0.9rem' }}>
-                    No image evidence provided
+                    {t('track.noImage')}
                   </div>
                 )}
                 
                 {result.resolutionImage && (
                   <div style={{ marginTop: '2rem' }}>
-                    <label className="form-label">Resolution Proof</label>
+                    <label className="form-label">{t('track.resolutionProof')}</label>
                     <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '2px solid var(--gov-green)', background: 'var(--gov-bg)' }}>
                       <img src={result.resolutionImage} alt="Resolution" style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
                     </div>

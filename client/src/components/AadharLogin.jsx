@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Send, ShieldCheck, Lock, RefreshCw, Fingerprint, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const AadharLogin = ({ onLogin }) => {
+  const { t } = useTranslation();
   const [aadhar, setAadhar] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState(1);
@@ -55,7 +57,6 @@ const AadharLogin = ({ onLogin }) => {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/verify-otp`, { aadhar, otp });
-      // On success, trigger login
       onLogin(res.data.token, aadhar);
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid OTP. Please check and try again.');
@@ -68,7 +69,6 @@ const AadharLogin = ({ onLogin }) => {
     <div className="animate-fade-in" style={{ maxWidth: '480px', margin: '0 auto' }}>
       <div className="gov-card" style={{ padding: '3rem 2.5rem', borderTop: '5px solid var(--gov-navy)' }}>
         
-        {/* Verification Icon Section */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div style={{ 
             width: '70px', 
@@ -85,14 +85,13 @@ const AadharLogin = ({ onLogin }) => {
             {step === 1 ? <Fingerprint size={32} /> : <ShieldCheck size={32} />}
           </div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--gov-navy)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-            {step === 1 ? 'Citizen Authentication' : 'Verify Identity'}
+            {step === 1 ? t('auth.title') : t('auth.verify')}
           </h2>
           <p style={{ color: 'var(--gov-text-muted)', fontSize: '0.95rem' }}>
-            {step === 1 ? 'Verify your identity via Secure Aadhar Gateway' : 'Enter the 6-digit code sent to your mobile'}
+            {step === 1 ? t('auth.sub') : t('auth.otpSub')}
           </p>
         </div>
 
-        {/* Progress Bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2.5rem' }}>
           <div style={{ height: '4px', flex: 1, background: 'var(--gov-navy)', borderRadius: '2px' }}></div>
           <div style={{ height: '4px', flex: 1, background: step === 2 ? 'var(--gov-navy)' : 'var(--gov-border)', borderRadius: '2px', transition: 'all 0.3s' }}></div>
@@ -123,8 +122,8 @@ const AadharLogin = ({ onLogin }) => {
           <form onSubmit={handleSendOtp}>
             <div className="form-group" style={{ marginBottom: '2rem' }}>
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                Aadhar Number 
-                <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>12 DIGITS REQUIRED</span>
+                {t('auth.aadharLabel')} 
+                <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>{t('auth.digitsRequired')}</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}>
@@ -147,13 +146,13 @@ const AadharLogin = ({ onLogin }) => {
               style={{ width: '100%', justifyContent: 'center', padding: '1.1rem' }}
               disabled={loading}
             >
-              {loading ? <RefreshCw className="animate-spin" size={20} /> : <>SEND SECURE OTP <ChevronRight size={20} /></>}
+              {loading ? <RefreshCw className="animate-spin" size={20} /> : <>{t('auth.sendOtp')} <ChevronRight size={20} /></>}
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp}>
              <div className="form-group" style={{ marginBottom: '2rem' }}>
-              <label className="form-label">Authentication OTP</label>
+              <label className="form-label">{t('auth.otpLabel')}</label>
               <div style={{ position: 'relative' }}>
                 <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }}>
                   <Lock size={18} />
@@ -175,7 +174,7 @@ const AadharLogin = ({ onLogin }) => {
               style={{ width: '100%', justifyContent: 'center', padding: '1.1rem', background: 'var(--gov-green)' }}
               disabled={loading}
             >
-              {loading ? <RefreshCw className="animate-spin" size={20} /> : <>VERIFY & PROCEED <ChevronRight size={20} /></>}
+              {loading ? <RefreshCw className="animate-spin" size={20} /> : <>{t('auth.verifyBtn')} <ChevronRight size={20} /></>}
             </button>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
@@ -184,7 +183,7 @@ const AadharLogin = ({ onLogin }) => {
                 onClick={() => { setStep(1); setOtp(''); setError(''); setMessage(''); }}
                 style={{ background: 'none', border: 'none', color: 'var(--gov-text-muted)', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.85rem', fontWeight: 600 }}
               >
-                Change Aadhar
+                {t('auth.changeAadhar')}
               </button>
               
               <button 
@@ -203,7 +202,7 @@ const AadharLogin = ({ onLogin }) => {
                   fontWeight: 700
                 }}
               >
-                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {timeLeft > 0 ? `Resend in ${timeLeft}s` : 'Resend OTP'}
+                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {timeLeft > 0 ? t('auth.resendIn', { seconds: timeLeft }) : t('auth.resend')}
               </button>
             </div>
           </form>
@@ -218,12 +217,12 @@ const AadharLogin = ({ onLogin }) => {
         border: '1px dashed var(--gov-border)',
         textAlign: 'center'
       }}>
-        <p style={{ fontSize: '0.8rem', color: 'var(--gov-navy)', fontWeight: 700, marginBottom: '0.5rem', textTransform: 'uppercase' }}>Security Note</p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--gov-navy)', fontWeight: 700, marginBottom: '0.5rem', textTransform: 'uppercase' }}>{t('common.securityNote')}</p>
         <p style={{ fontSize: '0.8rem', color: 'var(--gov-text-muted)', lineHeight: '1.5' }}>
-          This is a secure government portal. Your Aadhar details are never stored on our servers and are only used for one-time verification.
+          {t('common.securityDesc')}
         </p>
         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--gov-border)', fontSize: '0.75rem', opacity: 0.6 }}>
-          Testing Mode: Use Aadhar <code style={{ background: '#e2e8f0', padding: '0.2rem 0.4rem', borderRadius: '3px' }}>123456789012</code>
+          {t('auth.testingMode')} <code style={{ background: '#e2e8f0', padding: '0.2rem 0.4rem', borderRadius: '3px' }}>123456789012</code>
         </div>
       </div>
     </div>
