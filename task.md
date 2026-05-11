@@ -17,3 +17,14 @@
 - [x] Bugfix: Install PIL (Pillow) in ai_service venv
 - [x] Bugfix: Improve autofill logic in Frontend
 - [x] Bugfix: Defensive checks in Dashboard
+
+## Conflict Resolution & Feature Integration
+- [x] Resolve conflicts in App.jsx (Merge JANSAHAYAK theme with UserDashboard)
+- [x] Resolve conflicts in Dashboard.jsx (Merge Admin UI with AI verification details)
+- [x] Resolve conflicts in GrievanceForm.jsx (Merge JANSAHAYAK form with success logic)
+- [x] Resolve conflicts in AadharLogin.jsx (Fix onLogin props)
+- [x] Resolve conflicts in TrackStatus.jsx (Merge result views)
+- [x] Verify application functionality
+- [x] Implement exact GPS capture on complaint report
+- [x] Implement distance-based verification (100m) for complaint resolution
+- [x] Update Backend to enforce location-matching before resolution

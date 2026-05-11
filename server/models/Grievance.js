@@ -61,6 +61,12 @@ const GrievanceSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  resolutionLat: {
+    type: Number,
+  },
+  resolutionLon: {
+    type: Number,
+  },
   aiDetectionConfidence: {
     type: Number,
     default: 0,
