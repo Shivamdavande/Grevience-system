@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Pie, Bar } from 'react-chartjs-2';
 import { Clock, CheckCircle2, AlertCircle, Filter, RefreshCw, MapPin, ShieldAlert, AlertTriangle, LayoutDashboard, PlusCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartDataLabels);
 
 const Dashboard = () => {
   const [complaints, setComplaints] = useState([]);
@@ -147,7 +148,16 @@ const Dashboard = () => {
   if (loading && !stats) return <div style={{ textAlign: 'center', padding: '5rem' }}>Loading Dashboard...</div>;
 
   const pieData = {
-    labels: stats?.categories?.map(c => c._id) || [],
+    labels: stats?.categories?.map(c => {
+      const cat = c._id.toLowerCase();
+      let dept = 'Other';
+      if (cat.includes('road')) dept = 'Road Dept';
+      else if (cat.includes('sewage') || cat.includes('sanitation')) dept = 'Sewage Dept';
+      else if (cat.includes('waste') || cat.includes('garbage')) dept = 'Waste Dept';
+      else if (cat.includes('water')) dept = 'Water Dept';
+      else if (cat.includes('electric') || cat.includes('light')) dept = 'Electric Dept';
+      return `${c._id} (${dept})`;
+    }) || [],
     datasets: [{
       data: stats?.categories?.map(c => c.count) || [],
       backgroundColor: ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#94a3b8'],
@@ -187,6 +197,10 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const currentViewDept = activeRole === 'Municipal Corporation' 
+    ? (filterDepartment === 'All' ? 'All Departments' : filterDepartment)
+    : activeRole;
 
   return (
     <div>
@@ -405,10 +419,47 @@ const Dashboard = () => {
 
         {/* Charts */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div className="glass" style={{ padding: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Issue Categories</h3>
-            <div style={{ height: '250px', display: 'flex', justifyContent: 'center' }}>
-              <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }} />
+          <div className="glass" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary)', padding: '0.2rem 0.8rem', borderRadius: '0 0 0 12px', fontSize: '0.7rem', fontWeight: 'bold', color: 'white', opacity: 0.8 }}>
+              {currentViewDept}
+            </div>
+            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <LayoutDashboard size={20} style={{ color: 'var(--primary)' }} />
+              <span>Issue Categories</span>
+            </h3>
+            <div style={{ height: '300px', display: 'flex', justifyContent: 'center' }}>
+              <Pie 
+                data={pieData} 
+                options={{ 
+                  maintainAspectRatio: false, 
+                  plugins: { 
+                    legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } },
+                    datalabels: {
+                      color: '#fff',
+                      formatter: (value, context) => {
+                        const label = context.chart.data.labels[context.dataIndex];
+                        // Extract department name from "Category (Dept)"
+                        const match = label.match(/\((.*?)\)/);
+                        return match ? match[1] : label;
+                      },
+                      font: { weight: 'bold', size: 10 },
+                      textAlign: 'center',
+                      display: (context) => context.dataset.data[context.dataIndex] > 0
+                    }
+                  } 
+                }} 
+              />
+            </div>
+            <div style={{ 
+              marginTop: '1.5rem', 
+              padding: '0.75rem', 
+              background: 'rgba(99, 102, 241, 0.1)', 
+              borderRadius: '12px', 
+              textAlign: 'center',
+              border: '1px solid rgba(99, 102, 241, 0.2)'
+            }}>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Current Department</p>
+              <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)' }}>{currentViewDept}</p>
             </div>
           </div>
 
