@@ -55,12 +55,8 @@ const AadharLogin = ({ onLogin }) => {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/verify-otp`, { aadhar, otp });
-<<<<<<< HEAD
       // On success, trigger login
       onLogin(res.data.token, aadhar);
-=======
-      onLogin(res.data.token);
->>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid OTP. Please check and try again.');
     } finally {

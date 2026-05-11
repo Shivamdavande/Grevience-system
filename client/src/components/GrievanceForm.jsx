@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck } from 'lucide-react';
+import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck, RefreshCw } from 'lucide-react';
 import MapPicker from './MapPicker';
 
 const GrievanceForm = ({ userAadhar, onSuccess }) => {
@@ -14,7 +14,42 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [selectedDept, setSelectedDept] = useState('Municipal Corporation');
+  const [fetchingLocation, setFetchingLocation] = useState(false);
+
   const fileInputRef = useRef(null);
+
+  const fetchExactLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+    setFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setCoords({ lat: latitude, lon: longitude });
+        
+        // Reverse geocode to get address string
+        try {
+          const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          if (res.data.display_name) setLocation(res.data.display_name);
+        } catch (err) {
+          setLocation(`Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`);
+        }
+        setFetchingLocation(false);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert("Failed to get exact location. Please enable location permissions.");
+        setFetchingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  useEffect(() => {
+    fetchExactLocation();
+  }, []);
 
   const DEPARTMENTS = [
     'Municipal Corporation',
@@ -188,18 +223,36 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Incident Location</label>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Incident Location
+              <button 
+                type="button" 
+                onClick={fetchExactLocation}
+                className="btn-gov-secondary"
+                style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                disabled={fetchingLocation}
+              >
+                {fetchingLocation ? <Loader2 className="animate-spin" size={12} /> : <RefreshCw size={12} />} 
+                {fetchingLocation ? 'GETTING GPS...' : 'REFRESH GPS'}
+              </button>
+            </label>
             <div style={{ position: 'relative' }}>
               <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
               <input 
                 type="text" 
                 className="form-input" 
                 style={{ paddingLeft: '3rem' }}
-                placeholder="Search or enter location address..."
+                placeholder="Searching exact location via GPS..."
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                required
               />
             </div>
+            {coords.lat && (
+              <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', fontWeight: 800 }}>
+                ✓ EXACT COORDINATES CAPTURED: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
+              </p>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -216,18 +269,6 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
             </div>
           </div>
 
-<<<<<<< HEAD
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button className="glass" onClick={() => setResult(null)} style={{ padding: '0.75rem 2rem' }}>
-              Report Another Issue
-            </button>
-            <button className="btn-primary" onClick={onSuccess} style={{ padding: '0.75rem 2rem' }}>
-              Go to Dashboard
-            </button>
-          </div>
-        </motion.div>
-      )}
-=======
           <button type="submit" className="btn-gov-primary" style={{ width: '100%', justifyContent: 'center', padding: '1rem' }} disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : <><Send size={20} /> SUBMIT FORM</>}
           </button>
@@ -255,7 +296,6 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           </p>
         </div>
       </div>
->>>>>>> aa26a1f (Updated AI grievance system UI and backend fixes)
     </div>
   );
 };

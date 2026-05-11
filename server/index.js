@@ -310,12 +310,45 @@ app.get('/api/complaints/user/:aadhar', async (req, res) => {
   }
 });
 
+// Helper to calculate distance between coordinates (in km)
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // 3. Update status
 app.patch('/api/complaints/:id', async (req, res) => {
-  const { status, resolutionImage, isAiGenerated, aiDetectionConfidence, similarityScore, isMatch } = req.body;
+  const { status, resolutionImage, isAiGenerated, aiDetectionConfidence, similarityScore, isMatch, resolutionLat, resolutionLon } = req.body;
   try {
     const complaint = await Grievance.findById(req.params.id);
     if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
+
+    // Location Verification for Resolution
+    if (status === 'Resolved') {
+      if (!resolutionLat || !resolutionLon) {
+        return res.status(400).json({ error: 'GPS coordinates are required to resolve a complaint. Please enable location services.' });
+      }
+
+      if (complaint.lat && complaint.lon) {
+        const distance = haversineDistance(complaint.lat, complaint.lon, resolutionLat, resolutionLon);
+        console.log(`Resolution distance check: ${distance.toFixed(3)} km`);
+        
+        // Threshold: 100 meters (0.1 km)
+        if (distance > 0.1) {
+          return res.status(400).json({ 
+            error: `Resolution denied. You are too far from the original incident location (${(distance * 1000).toFixed(0)}m away). You must be within 100m to resolve the case.`,
+            distance: distance
+          });
+        }
+      }
+    }
 
     const updateData = { status };
     if (resolutionImage) updateData.resolutionImage = resolutionImage;
@@ -323,6 +356,8 @@ app.patch('/api/complaints/:id', async (req, res) => {
     if (typeof aiDetectionConfidence === 'number') updateData.aiDetectionConfidence = aiDetectionConfidence;
     if (typeof similarityScore === 'number') updateData.similarityScore = similarityScore;
     if (typeof isMatch === 'boolean') updateData.isMatch = isMatch;
+    if (resolutionLat) updateData.resolutionLat = resolutionLat;
+    if (resolutionLon) updateData.resolutionLon = resolutionLon;
 
     // Token Award Logic
     if (status === 'Resolved' && !complaint.tokensAwarded) {
