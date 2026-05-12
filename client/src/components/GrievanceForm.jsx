@@ -129,11 +129,14 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           
           // Auto-pick the first result's coordinates immediately (like Flipkart)
           const first = res.data[0];
-          setCoords({ lat: parseFloat(first.lat), lon: parseFloat(first.lon) });
+          const lat = parseFloat(first.lat);
+          const lon = parseFloat(first.lon);
+          setCoords({ lat, lon });
           
           const { area, city } = extractWardZone(first);
           setWard(area);
           setZone(city);
+          console.log(`Auto-synced: ${area}, ${city} at ${lat}, ${lon}`);
         }
       } catch (err) {
         console.error("Search failed", err);
@@ -402,20 +405,33 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
             )}
 
             {coords.lat && !geocoding && (
-              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #dcfce7' }}>
-                <p style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
-                   <ShieldCheck size={14} /> {t('form.gpsCaptured')}: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gov-text-muted)' }}>Assigned Area:</span>
-                  <input 
-                    type="text" 
-                    value={ward || ''} 
-                    onChange={(e) => setWard(e.target.value)}
-                    style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-navy)', border: 'none', background: 'transparent', borderBottom: '1px solid #dcfce7', width: 'auto', outline: 'none' }}
-                  />
-                  <RefreshCw size={12} color="#15803d" style={{ cursor: 'pointer' }} onClick={() => setIsManualInput(true)} />
+              <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdf4', borderRadius: '16px', border: '1px solid #dcfce7', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                   <p style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
+                      <ShieldCheck size={16} /> LOCATION SYNCED
+                   </p>
+                   <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#15803d', opacity: 0.8 }}>{coords.lat.toFixed(4)}, {coords.lon.toFixed(4)}</span>
                 </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '10px', border: '1px solid #dcfce7' }}>
+                  <div style={{ background: 'var(--gov-navy)', color: 'white', padding: '0.3rem', borderRadius: '6px', display: 'flex' }}>
+                    <MapPin size={12} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--gov-text-muted)', margin: 0, textTransform: 'uppercase' }}>Routing to Office</p>
+                    <input 
+                      type="text" 
+                      value={ward || ''} 
+                      onChange={(e) => setWard(e.target.value)}
+                      style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--gov-navy)', border: 'none', background: 'transparent', width: '100%', outline: 'none', padding: 0 }}
+                      placeholder="Enter Ward/Area"
+                    />
+                  </div>
+                  <RefreshCw size={14} color="var(--gov-navy)" style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => setIsManualInput(true)} />
+                </div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--gov-text-muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                  * This complaint will be assigned to the <strong>{ward || 'local'}</strong> department office.
+                </p>
               </div>
             )}
 
