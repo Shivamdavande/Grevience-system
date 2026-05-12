@@ -1,0 +1,43 @@
+.auth-container {
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.auth-card {
+  padding: 3rem 2.5rem;
+  border-top: 5px solid var(--gov-navy);
+}
+
+.auth-form-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.auth-card.register-mode .auth-form-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.auth-card.login-mode .auth-form-grid {
+  grid-template-columns: 1fr;
+}
+
+.auth-card.register-mode .auth-submit-section {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .auth-card.register-mode .auth-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .auth-card.register-mode .auth-submit-section {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 2rem 1.5rem !important;
+  }
+}

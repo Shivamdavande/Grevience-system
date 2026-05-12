@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Send, ShieldCheck, Lock, RefreshCw, Fingerprint, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import './Auth.css';
 
 const AadharLogin = ({ onLogin }) => {
   const { t } = useTranslation();
@@ -66,8 +67,8 @@ const AadharLogin = ({ onLogin }) => {
   };
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: '480px', margin: '0 auto' }}>
-      <div className="gov-card" style={{ padding: '3rem 2.5rem', borderTop: '5px solid var(--gov-navy)' }}>
+    <div className="animate-fade-in auth-container">
+      <div className="gov-card auth-card">
         
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div style={{ 

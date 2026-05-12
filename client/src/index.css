@@ -27,6 +27,22 @@
   box-sizing: border-box;
 }
 
+/* Custom Scrollbar for better UX on desktop */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: var(--gov-bg);
@@ -159,6 +175,69 @@ img {
   box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.1);
 }
 
+/* Hamburger Menu Toggle */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--gov-navy);
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1001;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 80%;
+  max-width: 300px;
+  height: 100vh;
+  background: var(--gov-white);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+  z-index: 1000;
+  transition: right 0.3s ease-in-out;
+  padding: 80px 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.mobile-menu-overlay.open {
+  right: 0;
+}
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: none;
+}
+
+.menu-backdrop.open {
+  display: block;
+}
+
+/* Utility Classes */
+.flex-wrap { flex-wrap: wrap; }
+.hidden-mobile { display: block; }
+.show-mobile { display: none; }
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 3rem;
+}
+
+@media (max-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
 /* Status Badges */
 .badge {
   padding: 0.25rem 0.75rem;
@@ -216,19 +295,21 @@ img {
     gap: 1.5rem; 
     text-align: center;
   }
-  .logo-section { flex-direction: column; gap: 0.5rem; }
+  .logo-section { gap: 0.75rem; }
+  
+  .hidden-mobile { display: none !important; }
+  .show-mobile { display: block !important; }
+  .menu-toggle { display: block; }
+
   .nav-links { 
-    gap: 0.5rem; 
-    flex-direction: column;
-    width: 100%;
-    background: #f1f5f9;
-    padding: 1rem;
-    border-radius: var(--radius-sm);
+    display: none; /* Handled by mobile-menu-overlay */
   }
+
   .nav-item { 
     width: 100%;
-    padding: 0.75rem;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--gov-border);
+    font-size: 1.1rem;
   }
   .nav-item:last-child { border-bottom: none; }
   .nav-item:hover, .nav-item.active { border-bottom: 1px solid var(--gov-navy); }
@@ -277,10 +358,6 @@ img {
   }
 
   /* Components Layouts (Responsive Grid Helper) */
-  .responsive-grid {
-    grid-template-columns: 1fr !important;
-    gap: 2rem !important;
-  }
 
   .gov-card { padding: 1.5rem; }
   main { padding: 2rem 0 !important; }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Mail, Shield, Building2, BadgeCheck, Phone, Lock, MapPin, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import './Auth.css';
 
 const DeptAuth = ({ onLogin }) => {
   const { t } = useTranslation();
@@ -69,10 +70,10 @@ const DeptAuth = ({ onLogin }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem',
+      padding: '2rem 1rem',
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
     }}>
-      <div className="auth-card" style={{
+      <div className={`auth-card ${isLogin ? 'login-mode' : 'register-mode'}`} style={{
         background: 'rgba(255, 255, 255, 0.9)',
         backdropFilter: 'blur(10px)',
         borderRadius: '24px',
@@ -122,11 +123,7 @@ const DeptAuth = ({ onLogin }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{
-          display: 'grid',
-          gridTemplateColumns: isLogin ? '1fr' : '1fr 1fr',
-          gap: '1.25rem'
-        }}>
+        <form onSubmit={handleSubmit} className="auth-form-grid">
           {isLogin ? (
             <>
               <div className="form-group">
@@ -239,7 +236,7 @@ const DeptAuth = ({ onLogin }) => {
             </div>
           </div>
 
-          <div style={{ gridColumn: isLogin ? 'span 1' : 'span 2', marginTop: '1rem' }}>
+          <div className="auth-submit-section" style={{ marginTop: '1rem' }}>
             <button
               type="submit"
               disabled={loading}

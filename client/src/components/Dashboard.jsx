@@ -6,6 +6,7 @@ import { Pie, Bar } from 'react-chartjs-2';
 import { Clock, CheckCircle2, AlertCircle, Filter, RefreshCw, MapPin, ShieldAlert, AlertTriangle, LayoutDashboard, PlusCircle, Loader2, Camera, X, ArrowRight, Check, BarChart3, TrendingUp } from 'lucide-react';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { motion, AnimatePresence } from 'framer-motion';
+import './Dashboard.css';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, ChartDataLabels);
 
@@ -187,36 +188,32 @@ const Dashboard = ({ userDepartment }) => {
   return (
     <div className="admin-view" style={{ minHeight: '100vh', background: '#f8fafc' }}>
       {/* Dynamic Header */}
-      <div className="admin-header" style={{ 
-        background: 'var(--gov-navy)', 
-        padding: '3.5rem 2rem 5rem', 
-        color: 'white',
-        position: 'relative'
-      }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="admin-header">
+        <div className="container admin-header-inner">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '8px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '8px', display: 'flex' }}>
                 <LayoutDashboard size={20} />
               </div>
               <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.8 }}>
                 Official Administration Portal
               </span>
             </div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
+            <h1 className="admin-title" style={{ fontSize: '2.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
               {userDepartment ? getDeptName(userDepartment).toUpperCase() : "MASTER CONTROL"} PANEL
             </h1>
-            <p style={{ marginTop: '0.5rem', fontSize: '1.1rem', opacity: 0.9, maxWidth: '600px', fontWeight: 500 }}>
+            <p className="hidden-mobile" style={{ marginTop: '0.5rem', fontSize: '1.1rem', opacity: 0.9, maxWidth: '600px', fontWeight: 500 }}>
               {userDepartment 
                 ? `Overseeing ${filteredComplaints.length} grievances within the ${userDepartment} jurisdiction.`
                 : `Comprehensive overview of ${complaints.length} civic grievances across all departments.`}
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+          <div className="header-badges">
             {isMunicipalAdmin && (
               <button 
                 onClick={() => setPerfModalOpen(true)}
+                className="btn-perf-toggle"
                 style={{ 
                   background: 'rgba(255,255,255,0.1)', 
                   backdropFilter: 'blur(10px)', 
@@ -232,23 +229,21 @@ const Dashboard = ({ userDepartment }) => {
                   fontWeight: 800,
                   transition: 'all 0.2s'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
               >
                 <BarChart3 size={18} />
-                Dept Performance
+                <span className="hidden-mobile">Performance</span>
               </button>
             )}
             <div className="glass-card" style={{ 
               background: 'rgba(255,255,255,0.1)', 
               backdropFilter: 'blur(10px)', 
-              padding: '1.25rem 2rem', 
+              padding: '1rem 1.5rem', 
               borderRadius: '20px',
               border: '1px solid rgba(255,255,255,0.2)',
               textAlign: 'center'
             }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.8, marginBottom: '0.25rem', textTransform: 'uppercase' }}>Dept Rewards</p>
-              <h3 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 900 }}>{currentDeptTokens} <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>Tokens</span></h3>
+              <p style={{ fontSize: '0.6rem', fontWeight: 800, opacity: 0.8, marginBottom: '0.25rem', textTransform: 'uppercase' }}>Rewards</p>
+              <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 900 }}>{currentDeptTokens}</h3>
             </div>
           </div>
         </div>
@@ -256,7 +251,7 @@ const Dashboard = ({ userDepartment }) => {
 
       <div className="container" style={{ marginTop: '-3rem', position: 'relative', zIndex: 10, paddingBottom: '4rem' }}>
         {/* Quick Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div className="stats-grid-dashboard">
           {[
             { label: 'Pending', count: (userDepartment && userDepartment !== 'Municipal Corporation' ? complaints.filter(c => c.department === userDepartment) : complaints).filter(c => c.status === 'Pending').length, icon: Clock, color: '#f59e0b', bg: '#fef3c7', filter: 'Pending' },
             { label: 'In Progress', count: (userDepartment && userDepartment !== 'Municipal Corporation' ? complaints.filter(c => c.department === userDepartment) : complaints).filter(c => c.status === 'In Progress').length, icon: RefreshCw, color: '#3b82f6', bg: '#dbeafe', filter: 'In Progress' },
@@ -268,24 +263,17 @@ const Dashboard = ({ userDepartment }) => {
               whileHover={{ y: -5, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setStatusFilter(statusFilter === stat.filter ? 'All' : stat.filter)}
+              className={`stat-card-admin ${statusFilter === stat.filter ? 'active-filter' : ''}`}
               style={{ 
-                background: 'white', 
-                padding: '1.5rem', 
-                borderRadius: '24px', 
-                boxShadow: statusFilter === stat.filter ? `0 10px 15px -3px ${stat.color}44` : '0 4px 6px -1px rgba(0,0,0,0.1)', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                cursor: 'pointer',
+                background: 'white',
                 border: statusFilter === stat.filter ? `2px solid ${stat.color}` : '2px solid transparent',
-                transition: 'all 0.2s ease'
               }}
             >
               <div>
                 <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{stat.label}</p>
                 <h2 style={{ fontSize: '2rem', margin: 0, fontWeight: 900, color: 'var(--gov-navy)' }}>{stat.count}</h2>
               </div>
-              <div style={{ background: stat.bg, padding: '1rem', borderRadius: '16px' }}>
+              <div style={{ background: stat.bg, padding: '1rem', borderRadius: '16px', display: 'flex' }}>
                 <stat.icon color={stat.color} size={28} />
               </div>
             </motion.div>
@@ -294,12 +282,12 @@ const Dashboard = ({ userDepartment }) => {
 
 
         {/* Complaints Table */}
-        <div style={{ background: 'white', borderRadius: '32px', padding: '2.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--gov-navy)', margin: 0 }}>Active Complaint Queue</h2>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div className="queue-container">
+          <div className="queue-header">
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--gov-navy)', margin: 0 }}>Active Queue</h2>
+            <div className="filter-actions">
               {isMunicipalAdmin && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Filter size={16} color="var(--gov-text-muted)" />
                   <select 
                     value={selectedDeptFilter}
@@ -315,7 +303,7 @@ const Dashboard = ({ userDepartment }) => {
                       cursor: 'pointer'
                     }}
                   >
-                    <option value="All">All Departments</option>
+                    <option value="All">All Depts</option>
                     {departments.map(dept => (
                       <option key={dept} value={dept}>{getDeptName(dept)}</option>
                     ))}
@@ -323,12 +311,12 @@ const Dashboard = ({ userDepartment }) => {
                 </div>
               )}
               <button onClick={fetchData} className="btn-gov-secondary" style={{ padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '12px' }}>
-                <RefreshCw size={16} /> Sync Data
+                <RefreshCw size={16} /> <span className="hidden-mobile">Sync</span>
               </button>
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.75rem' }}>
               <thead>
                 <tr style={{ textAlign: 'left' }}>

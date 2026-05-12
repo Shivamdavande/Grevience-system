@@ -221,6 +221,10 @@ app.post('/api/dept/register', async (req, res) => {
 });
 
 app.post('/api/dept/login', async (req, res) => {
+
+  // ✅ YE LINE ADD KAR (MOST IMPORTANT)
+  console.log("JWT_SECRET CHECK 👉", process.env.JWT_SECRET);
+
   const { emailOrId, password } = req.body;
 
   try {
@@ -238,6 +242,13 @@ app.post('/api/dept/login', async (req, res) => {
     }
 
     const payload = { user: { id: user.id, department: user.department, fullName: user.fullName } };
+    
+    // 🔥 SAFE CHECK (extra)
+    if (!process.env.JWT_SECRET) {
+      console.log("❌ JWT_SECRET missing hai");
+      return res.status(500).json({ error: 'JWT Secret not found' });
+    }
+
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
 
     res.json({ token, user: { id: user.id, fullName: user.fullName, department: user.department } });
@@ -246,7 +257,6 @@ app.post('/api/dept/login', async (req, res) => {
     res.status(500).json({ error: 'Server Error' });
   }
 });
-
 // 1. Submit a complaint (Supports Text + Image)
 app.post('/api/complaints', upload.single('image'), async (req, res) => {
   const { text, location, lat, lon, department: userSelectedDepartment, userAadhar } = req.body;
