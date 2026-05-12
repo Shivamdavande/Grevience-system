@@ -268,6 +268,9 @@ const Dashboard = ({ user }) => {
                 }}
               >
                 <BarChart3 size={18} />
+                {t('admin.deptPerformance')}
+              </button>
+            )}
             <div className="glass-card" style={{
               background: 'rgba(255,255,255,0.1)',
               backdropFilter: 'blur(10px)',
