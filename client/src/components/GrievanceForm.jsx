@@ -74,6 +74,26 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
     fetchExactLocation();
   }, []);
 
+  const extractWardZone = (sug) => {
+    const addr = sug.address || {};
+    const full = sug.display_name || "";
+    
+    // 1. Try structured fields
+    let area = addr.suburb || addr.neighbourhood || addr.residential || addr.village || addr.town;
+    
+    // 2. Fallback: Search for "Ward X" or "Zone X" patterns in full address string
+    if (!area || (!area.toLowerCase().includes('ward') && !area.toLowerCase().includes('zone'))) {
+      const wardMatch = full.match(/ward\s*(\d+)/i);
+      const zoneMatch = full.match(/zone\s*(\d+)/i);
+      if (wardMatch) area = `Ward ${wardMatch[1]}`;
+      else if (zoneMatch) area = `Zone ${zoneMatch[1]}`;
+      else if (!area) area = full.split(',')[0];
+    }
+    
+    const city = addr.city || addr.county || addr.state || "Bhopal";
+    return { area, city };
+  };
+
   // Forward geocoding: Address string -> Suggestions & Coordinates
   useEffect(() => {
     if (!isManualInput || !location || location.length < 3) {
@@ -96,9 +116,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           const first = res.data[0];
           setCoords({ lat: parseFloat(first.lat), lon: parseFloat(first.lon) });
           
-          const addr = first.address || {};
-          const area = addr.suburb || addr.neighbourhood || addr.residential || addr.village || addr.town || first.display_name.split(',')[0];
-          const city = addr.city || addr.county || addr.state || "Bhopal";
+          const { area, city } = extractWardZone(first);
           setWard(area);
           setZone(city);
         }
@@ -116,9 +134,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
     setLocation(sug.display_name);
     setCoords({ lat: parseFloat(sug.lat), lon: parseFloat(sug.lon) });
     
-    const addr = sug.address || {};
-    const area = addr.suburb || addr.neighbourhood || addr.residential || addr.village || addr.town || sug.display_name.split(',')[0];
-    const city = addr.city || addr.county || addr.state || "Bhopal";
+    const { area, city } = extractWardZone(sug);
     setWard(area);
     setZone(city);
     
