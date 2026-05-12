@@ -13,6 +13,7 @@ import {
   Calendar,
   ChevronRight
 } from 'lucide-react';
+import './UserDashboard.css';
 
 const UserDashboard = ({ userAadhar, onReportIssue }) => {
   const { t } = useTranslation();
@@ -79,37 +80,37 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{t('nav.home')} <span className="gradient-text">{t('nav.dashboard')}</span></h1>
-          <p style={{ color: 'var(--text-muted)' }}>{t('user.welcome')}</p>
+    <div className="user-dashboard-container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
+      <header className="user-dashboard-header">
+        <div className="user-welcome-section">
+          <h1 style={{ fontWeight: 800 }}>{t('nav.home')} <span style={{ color: 'var(--gov-navy)' }}>{t('nav.dashboard')}</span></h1>
+          <p style={{ color: 'var(--gov-text-muted)' }}>{t('user.welcome')}</p>
         </div>
-        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+        <div className="user-actions">
           <motion.div 
-            className="glass" 
+            className="reward-badge" 
             style={{ 
               padding: '0.8rem 1.5rem', 
               borderRadius: '12px', 
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.75rem',
-              background: 'linear-gradient(135deg, rgba(253, 224, 71, 0.1), rgba(234, 179, 8, 0.1))',
-              border: '1px solid rgba(234, 179, 8, 0.2)'
+              background: '#fffbeb',
+              border: '1px solid #fef08a'
             }}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
           >
             <div style={{ background: '#eab308', padding: '0.4rem', borderRadius: '50%', display: 'flex' }}>
-              <PlusCircle size={16} color="black" />
+              <PlusCircle size={16} color="white" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '0.7rem', color: '#eab308', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('user.rewards')}</p>
-              <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: '#fef08a' }}>{userTokens} {t('user.tokens')}</p>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: '#854d0e', fontWeight: 800, textTransform: 'uppercase' }}>{t('user.rewards')}</p>
+              <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, color: '#854d0e' }}>{userTokens} {t('user.tokens')}</p>
             </div>
           </motion.div>
           <button 
-            className="btn-primary" 
+            className="btn-gov-primary" 
             onClick={onReportIssue}
             style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 1.5rem', borderRadius: '12px' }}
           >
@@ -164,27 +165,18 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
           {complaints.map((item, index) => (
             <motion.div 
               key={item._id}
-              className="glass" 
-              style={{ 
-                padding: '1.5rem', 
-                display: 'flex', 
-                flexDirection: 'column',
-                gap: '1.5rem',
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'transform 0.2s',
-                cursor: 'pointer'
-              }}
+              className="gov-card grievance-card" 
+              style={{ padding: '1.5rem' }}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: 1.005, backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
+              whileHover={{ scale: 1.01, background: '#fff' }}
               onClick={() => setExpandedId(expandedId === item._id ? null : item._id)}
             >
-              <div style={{ display: 'flex', gap: '1.5rem' }}>
+              <div className="grievance-card-content">
               {/* Image Preview if exists */}
               {item.imageUrl && (
-                <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
+                <div className="grievance-img-preview">
                   <img 
                     src={`http://127.0.0.1:5000${item.imageUrl}`} 
                     alt="Grievance" 
@@ -193,44 +185,45 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                 </div>
               )}
 
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                  <div>
+              <div className="grievance-info">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                     <div style={getStatusBadgeStyle(item.status)}>
                       {getStatusIcon(item.status)}
                       {translateStatus(item.status, t)}
                     </div>
-                    <span style={{ marginLeft: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      ID: {item._id.substring(0, 8)}...
+                    <span style={{ color: 'var(--gov-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>
+                      ID: #{item._id.slice(-8).toUpperCase()}
                     </span>
                   </div>
                   <div style={{ 
-                    backgroundColor: item.priority === 'High' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.05)',
-                    color: item.priority === 'High' ? '#ef4444' : 'var(--text-muted)',
+                    backgroundColor: item.priority === 'High' ? '#fee2e2' : '#f1f5f9',
+                    color: item.priority === 'High' ? '#ef4444' : 'var(--gov-text-muted)',
                     padding: '0.2rem 0.6rem',
                     borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold'
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase'
                   }}>
-                    {item.priority} {t('user.priorityLabel')}
+                    {item.priority}
                   </div>
                 </div>
 
-                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', color: '#fff' }}>{item.category}</h3>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: 'var(--gov-navy)', fontWeight: 800 }}>{item.category}</h3>
                 <p style={{ 
                   margin: '0 0 1rem 0', 
-                  color: 'rgba(255,255,255,0.7)', 
+                  color: 'var(--gov-text-muted)', 
                   display: '-webkit-box', 
                   WebkitLineClamp: 2, 
                   WebkitBoxOrient: 'vertical', 
                   overflow: 'hidden',
-                  fontSize: '0.95rem',
-                  lineHeight: '1.5'
+                  fontSize: '0.9rem',
+                  lineHeight: '1.6'
                 }}>
                   {item.text}
                 </p>
 
-                <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                <div className="grievance-meta">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <MapPin size={14} />
                     {item.location.split(',')[0]}
@@ -242,11 +235,11 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
+              <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
                 <ChevronRight 
-                  size={24} 
+                  size={20} 
                   style={{ 
-                    color: 'rgba(255,255,255,0.2)', 
+                    color: 'var(--gov-border)', 
                     transform: expandedId === item._id ? 'rotate(90deg)' : 'rotate(0deg)',
                     transition: 'transform 0.3s'
                   }} 

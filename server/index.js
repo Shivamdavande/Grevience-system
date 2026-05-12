@@ -223,6 +223,10 @@ app.post('/api/dept/register', async (req, res) => {
 });
 
 app.post('/api/dept/login', async (req, res) => {
+
+  // ✅ YE LINE ADD KAR (MOST IMPORTANT)
+  console.log("JWT_SECRET CHECK 👉", process.env.JWT_SECRET);
+
   const { emailOrId, password } = req.body;
 
   try {
@@ -248,7 +252,6 @@ app.post('/api/dept/login', async (req, res) => {
     res.status(500).json({ error: 'Server Error' });
   }
 });
-
 // 1. Submit a complaint (Supports Text + Image)
 app.post('/api/complaints', upload.single('image'), async (req, res) => {
   const { text, location, lat, lon, department: userSelectedDepartment, userAadhar, ward, zone } = req.body;

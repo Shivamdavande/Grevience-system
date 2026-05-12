@@ -247,7 +247,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
   }
 
   return (
-    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem' }}>
+    <div className="responsive-grid">
       <div className="gov-card">
         <h3 style={{ marginBottom: '2rem', borderBottom: '2px solid var(--gov-bg)', paddingBottom: '1rem', color: 'var(--gov-navy)' }}>{t('form.detailsTitle')}</h3>
         <form onSubmit={handleSubmit}>

@@ -232,7 +232,7 @@ const Dashboard = ({ user }) => {
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '8px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: '8px', display: 'flex' }}>
                 <LayoutDashboard size={20} />
               </div>
               <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.8 }}>
@@ -247,7 +247,7 @@ const Dashboard = ({ user }) => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+          <div className="header-badges">
             {isMunicipalAdmin && (
               <button
                 onClick={() => setPerfModalOpen(true)}
@@ -266,13 +266,8 @@ const Dashboard = ({ user }) => {
                   fontWeight: 800,
                   transition: 'all 0.2s'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
               >
                 <BarChart3 size={18} />
-                {t('admin.deptPerformance')}
-              </button>
-            )}
             <div className="glass-card" style={{
               background: 'rgba(255,255,255,0.1)',
               backdropFilter: 'blur(10px)',
@@ -290,7 +285,7 @@ const Dashboard = ({ user }) => {
 
       <div className="container" style={{ marginTop: '-3rem', position: 'relative', zIndex: 10, paddingBottom: '4rem' }}>
         {/* Quick Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div className="stats-grid-dashboard">
           {[
             { label: t('admin.pending'), count: deptFilteredComplaints.filter(c => c.status === 'Pending').length, icon: Clock, color: '#f59e0b', bg: '#fef3c7', filter: 'Pending' },
             { label: t('admin.inProgress'), count: deptFilteredComplaints.filter(c => c.status === 'In Progress').length, icon: RefreshCw, color: '#3b82f6', bg: '#dbeafe', filter: 'In Progress' },
@@ -312,14 +307,13 @@ const Dashboard = ({ user }) => {
                 alignItems: 'center',
                 cursor: 'pointer',
                 border: statusFilter === stat.filter ? `2px solid ${stat.color}` : '2px solid transparent',
-                transition: 'all 0.2s ease'
               }}
             >
               <div>
                 <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{stat.label}</p>
                 <h2 style={{ fontSize: '2rem', margin: 0, fontWeight: 900, color: 'var(--gov-navy)' }}>{stat.count}</h2>
               </div>
-              <div style={{ background: stat.bg, padding: '1rem', borderRadius: '16px' }}>
+              <div style={{ background: stat.bg, padding: '1rem', borderRadius: '16px', display: 'flex' }}>
                 <stat.icon color={stat.color} size={28} />
               </div>
             </motion.div>
@@ -328,12 +322,12 @@ const Dashboard = ({ user }) => {
 
 
         {/* Complaints Table */}
-        <div style={{ background: 'white', borderRadius: '32px', padding: '2.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--gov-navy)', margin: 0 }}>Active Complaint Queue</h2>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div className="queue-container">
+          <div className="queue-header">
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--gov-navy)', margin: 0 }}>Active Queue</h2>
+            <div className="filter-actions">
               {isMunicipalAdmin && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Filter size={16} color="var(--gov-text-muted)" />
                   <select
                     value={selectedDeptFilter}
@@ -362,7 +356,7 @@ const Dashboard = ({ user }) => {
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.75rem' }}>
               <thead>
                 <tr style={{ textAlign: 'left' }}>
