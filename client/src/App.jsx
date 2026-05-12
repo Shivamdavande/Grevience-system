@@ -97,7 +97,7 @@ function App() {
           )}
           
           {isDeptAuthenticated && (
-            <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => handleViewChange('admin')}>Dept Portal</div>
+            <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => handleViewChange('admin')}>{t('nav.deptPortal')}</div>
           )}
         </nav>
 
@@ -146,8 +146,8 @@ function App() {
             </div>
           ) : (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => handleViewChange('report')} className="btn-gov-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>Citizen Login</button>
-              <button onClick={() => handleViewChange('dept-auth')} className="btn-gov-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>Dept Portal</button>
+              <button onClick={() => handleViewChange('report')} className="btn-gov-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>{t('nav.citizenLogin')}</button>
+              <button onClick={() => handleViewChange('dept-auth')} className="btn-gov-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>{t('nav.deptPortal')}</button>
             </div>
           )}
         </div>
@@ -186,7 +186,7 @@ function App() {
         {view === 'track' && <TrackStatus />}
         {view === 'user-dashboard' && isAuthenticated && <UserDashboard userAadhar={userAadhar} onReportIssue={() => handleViewChange('report')} />}
         
-        {view === 'admin' && isDeptAuthenticated && <Dashboard userDepartment={deptUser?.department} />}
+        {view === 'admin' && isDeptAuthenticated && <Dashboard user={deptUser} />}
         
         {view === 'admin' && !isDeptAuthenticated && (
           <div style={{ textAlign: 'center', padding: '5rem' }}>

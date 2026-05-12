@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Mail, Shield, Building2, BadgeCheck, Phone, Lock, MapPin, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { translateDept } from '../utils/translationUtils';
 
 const DeptAuth = ({ onLogin }) => {
   const { t } = useTranslation();
@@ -17,7 +18,9 @@ const DeptAuth = ({ onLogin }) => {
     mobile: '',
     password: '',
     officeLocation: '',
-    emailOrId: '' // For login
+    emailOrId: '', // For login
+    ward: '',
+    zone: ''
   });
 
   const departments = [
@@ -99,10 +102,10 @@ const DeptAuth = ({ onLogin }) => {
             {isLogin ? <LogIn size={32} /> : <UserPlus size={32} />}
           </div>
           <h2 style={{ fontSize: '1.875rem', fontWeight: 800, color: 'var(--gov-navy)', margin: 0 }}>
-            {isLogin ? 'Department Login' : 'Officer Registration'}
+            {isLogin ? t('auth.loginToDashboard') : t('auth.officerRegistration')}
           </h2>
           <p style={{ color: 'var(--gov-text-muted)', marginTop: '0.5rem', fontWeight: 500 }}>
-            {isLogin ? 'Access your departmental dashboard' : 'Join the official grievance resolution network'}
+            {isLogin ? t('auth.accessDashboard') : t('auth.joinNetwork')}
           </p>
         </div>
 
@@ -130,7 +133,7 @@ const DeptAuth = ({ onLogin }) => {
           {isLogin ? (
             <>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Email or Employee ID</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.emailOrId')}</label>
                 <div style={{ position: 'relative' }}>
                   <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <input
@@ -139,7 +142,7 @@ const DeptAuth = ({ onLogin }) => {
                     required
                     value={formData.emailOrId}
                     onChange={handleChange}
-                    placeholder="Enter email or ID"
+                    placeholder={t('auth.enterEmailOrId')}
                     style={{
                       width: '100%',
                       padding: '0.75rem 1rem 0.75rem 2.75rem',
@@ -156,7 +159,7 @@ const DeptAuth = ({ onLogin }) => {
             <>
               {/* Registration Fields */}
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Full Name</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.fullName')}</label>
                 <div style={{ position: 'relative' }}>
                   <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <input type="text" name="fullName" required value={formData.fullName} onChange={handleChange} placeholder="Ghanshyam Dhote" 
@@ -164,7 +167,7 @@ const DeptAuth = ({ onLogin }) => {
                 </div>
               </div>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Email Address</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.emailAddress')}</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <input type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="officer@gov.in" 
@@ -172,7 +175,7 @@ const DeptAuth = ({ onLogin }) => {
                 </div>
               </div>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Employee ID</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.employeeId')}</label>
                 <div style={{ position: 'relative' }}>
                   <Shield size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <input type="text" name="employeeId" required value={formData.employeeId} onChange={handleChange} placeholder="EMP123456" 
@@ -180,17 +183,17 @@ const DeptAuth = ({ onLogin }) => {
                 </div>
               </div>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Department</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('admin.dept')}</label>
                 <div style={{ position: 'relative' }}>
                   <Building2 size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <select name="department" value={formData.department} onChange={handleChange}
                     style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', appearance: 'none', background: 'white' }}>
-                    {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                    {departments.map(dept => <option key={dept} value={dept}>{translateDept(dept, t)}</option>)}
                   </select>
                 </div>
               </div>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Designation</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.designation')}</label>
                 <div style={{ position: 'relative' }}>
                   <BadgeCheck size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <input type="text" name="designation" required value={formData.designation} onChange={handleChange} placeholder="Executive Engineer" 
@@ -198,7 +201,7 @@ const DeptAuth = ({ onLogin }) => {
                 </div>
               </div>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Mobile Number</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.mobileNumber')}</label>
                 <div style={{ position: 'relative' }}>
                   <Phone size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <input type="tel" name="mobile" required value={formData.mobile} onChange={handleChange} placeholder="+91 9876543210" 
@@ -206,10 +209,28 @@ const DeptAuth = ({ onLogin }) => {
                 </div>
               </div>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Office Location</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.officeLocation')}</label>
                 <div style={{ position: 'relative' }}>
                   <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
                   <input type="text" name="officeLocation" required value={formData.officeLocation} onChange={handleChange} placeholder="Zonal Office, Sector 5" 
+                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
+                </div>
+              </div>
+              
+              {/* Ward and Zone for ALL departments for regional isolation */}
+              <div className="form-group">
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Ward Name/Number</label>
+                <div style={{ position: 'relative' }}>
+                  <Building2 size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
+                  <input type="text" name="ward" required={formData.department !== 'Public Works Department'} value={formData.ward} onChange={handleChange} placeholder="e.g. Ward 12 or Kokta" 
+                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Zone / Area</label>
+                <div style={{ position: 'relative' }}>
+                  <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
+                  <input type="text" name="zone" value={formData.zone} onChange={handleChange} placeholder="e.g. East Zone or Anandnagar" 
                     style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
                 </div>
               </div>
@@ -217,7 +238,7 @@ const DeptAuth = ({ onLogin }) => {
           )}
 
           <div className="form-group">
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Password</label>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.password')}</label>
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
               <input
@@ -263,13 +284,13 @@ const DeptAuth = ({ onLogin }) => {
               onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
               onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
-              {loading ? 'Authenticating...' : (isLogin ? 'Login to Dashboard' : 'Complete Registration')}
+              {loading ? t('auth.authenticating') : (isLogin ? t('auth.loginToDashboard') : t('auth.completeRegistration'))}
               {!loading && <ArrowRight size={18} />}
             </button>
 
             <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
               <p style={{ color: 'var(--gov-text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>
-                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                {isLogin ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}
                 <button
                   type="button"
                   onClick={() => setIsLogin(!isLogin)}
@@ -283,7 +304,7 @@ const DeptAuth = ({ onLogin }) => {
                     textDecoration: 'underline'
                   }}
                 >
-                  {isLogin ? 'Register Now' : 'Login instead'}
+                  {isLogin ? t('auth.registerNow') : t('auth.loginInstead')}
                 </button>
               </p>
             </div>

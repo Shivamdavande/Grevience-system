@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { translateDept, translateStatus } from '../utils/translationUtils';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -197,7 +198,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                   <div>
                     <div style={getStatusBadgeStyle(item.status)}>
                       {getStatusIcon(item.status)}
-                      {item.status === 'Pending' ? t('admin.pending') : item.status === 'In Progress' ? t('admin.inProgress') : t('admin.resolved')}
+                      {translateStatus(item.status, t)}
                     </div>
                     <span style={{ marginLeft: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                       ID: {item._id.substring(0, 8)}...
@@ -267,7 +268,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>{t('user.locationLabel')}</p>
                     <p style={{ margin: 0, fontSize: '0.95rem' }}>{item.location}</p>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>{t('user.departmentLabel')}</p>
-                    <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 600 }}>{item.department}</p>
+                    <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 600 }}>{translateDept(item.department, t)}</p>
                   </div>
 
                   {item.status === 'Resolved' && item.resolutionImage && (
@@ -283,7 +284,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                         />
                       </div>
                       <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                        {t('user.resolvedMsg', { dept: item.department })}
+                        {t('user.resolvedMsg', { dept: translateDept(item.department, t) })}
                       </p>
                     </div>
                   )}

@@ -41,6 +41,14 @@ const GrievanceSchema = new mongoose.Schema({
   lon: {
     type: Number,
   },
+  ward: {
+    type: String,
+    default: null,
+  },
+  zone: {
+    type: String,
+    default: null,
+  },
   confidence: {
     type: Number,
     default: 0,

@@ -177,7 +177,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 // Departmental Employee Auth Routes
 app.post('/api/dept/register', async (req, res) => {
   console.log('Register Request Body:', req.body);
-  const { fullName, email, employeeId, department, designation, mobile, password, officeLocation } = req.body;
+  const { fullName, email, employeeId, department, designation, mobile, password, officeLocation, ward, zone } = req.body;
 
   try {
     // Check if user already exists
@@ -198,15 +198,17 @@ app.post('/api/dept/register', async (req, res) => {
       designation,
       mobile,
       password: hashedPassword,
-      officeLocation
+      officeLocation,
+      ward,
+      zone
     });
 
     await user.save();
 
-    const payload = { user: { id: user.id, department: user.department, fullName: user.fullName } };
+    const payload = { user: { id: user.id, department: user.department, fullName: user.fullName, ward: user.ward, zone: user.zone } };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
 
-    res.status(201).json({ token, user: { id: user.id, fullName: user.fullName, department: user.department } });
+    res.status(201).json({ token, user: { id: user.id, fullName: user.fullName, department: user.department, ward: user.ward, zone: user.zone } });
   } catch (err) {
     console.error('Dept Register Error Full:', err);
     if (err.name === 'ValidationError') {
@@ -237,10 +239,10 @@ app.post('/api/dept/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid Credentials' });
     }
 
-    const payload = { user: { id: user.id, department: user.department, fullName: user.fullName } };
+    const payload = { user: { id: user.id, department: user.department, fullName: user.fullName, ward: user.ward, zone: user.zone } };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
 
-    res.json({ token, user: { id: user.id, fullName: user.fullName, department: user.department } });
+    res.json({ token, user: { id: user.id, fullName: user.fullName, department: user.department, ward: user.ward, zone: user.zone } });
   } catch (err) {
     console.error('Dept Login Error:', err);
     res.status(500).json({ error: 'Server Error' });
@@ -249,7 +251,7 @@ app.post('/api/dept/login', async (req, res) => {
 
 // 1. Submit a complaint (Supports Text + Image)
 app.post('/api/complaints', upload.single('image'), async (req, res) => {
-  const { text, location, lat, lon, department: userSelectedDepartment, userAadhar } = req.body;
+  const { text, location, lat, lon, department: userSelectedDepartment, userAadhar, ward, zone } = req.body;
   const imageFile = req.file;
 
   if (!userAadhar) {
@@ -331,7 +333,9 @@ app.post('/api/complaints', upload.single('image'), async (req, res) => {
       department: finalDepartment,
       imageUrl,
       imageDescription,
-      userAadhar
+      userAadhar,
+      ward,
+      zone
     });
 
     const savedGrievance = await newGrievance.save();
@@ -406,7 +410,7 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 
 // 3. Update status
 app.patch('/api/complaints/:id', async (req, res) => {
-  const { status, resolutionImage, isAiGenerated, aiDetectionConfidence, similarityScore, isMatch, resolutionLat, resolutionLon } = req.body;
+  const { status, resolutionImage, isAiGenerated, aiDetectionConfidence, similarityScore, isMatch, resolutionLat, resolutionLon, lat, lon } = req.body;
   try {
     const complaint = await Grievance.findById(req.params.id);
     if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
@@ -436,6 +440,8 @@ app.patch('/api/complaints/:id', async (req, res) => {
     if (typeof isAiGenerated === 'boolean') updateData.isAiGenerated = isAiGenerated;
     if (typeof aiDetectionConfidence === 'number') updateData.aiDetectionConfidence = aiDetectionConfidence;
     if (typeof similarityScore === 'number') updateData.similarityScore = similarityScore;
+    if (typeof lat === 'number') updateData.lat = lat;
+    if (typeof lon === 'number') updateData.lon = lon;
     if (typeof isMatch === 'boolean') updateData.isMatch = isMatch;
     if (resolutionLat) updateData.resolutionLat = resolutionLat;
     if (resolutionLon) updateData.resolutionLon = resolutionLon;

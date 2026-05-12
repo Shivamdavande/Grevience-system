@@ -48,6 +48,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: 'dept-admin',
   },
+  ward: {
+    type: String,
+    default: null,
+  },
+  zone: {
+    type: String,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { translateDept } from '../utils/translationUtils';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck, RefreshCw, Navigation } from 'lucide-react';
 import MapPicker from './MapPicker';
 
 const GrievanceForm = ({ userAadhar, onSuccess }) => {
@@ -17,6 +18,13 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
   const [result, setResult] = useState(null);
   const [selectedDept, setSelectedDept] = useState('Municipal Corporation');
   const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [ward, setWard] = useState(null);
+  const [zone, setZone] = useState(null);
+  const [showMap, setShowMap] = useState(false);
+  const [isManualInput, setIsManualInput] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -33,8 +41,21 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
         
         // Reverse geocode to get address string
         try {
-          const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          if (res.data.display_name) setLocation(res.data.display_name);
+          const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`, {
+            headers: { 'User-Agent': 'AIGrievanceSystem/1.0' }
+          });
+          if (res.data.display_name) {
+            const address = res.data.display_name;
+            const addr = res.data.address || {};
+            setLocation(address);
+            
+            // Try to extract Area/City
+            const area = addr.suburb || addr.neighbourhood || addr.residential || addr.village || addr.town || address.split(',')[0];
+            const city = addr.city || addr.county || addr.state || "Bhopal";
+            
+            setWard(area);
+            setZone(city);
+          }
         } catch (err) {
           setLocation(`Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`);
         }
@@ -52,6 +73,59 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
   useEffect(() => {
     fetchExactLocation();
   }, []);
+
+  // Forward geocoding: Address string -> Suggestions & Coordinates
+  useEffect(() => {
+    if (!isManualInput || !location || location.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setGeocoding(true);
+      try {
+        const res = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&addressdetails=1&limit=5`, {
+          headers: { 'User-Agent': 'AIGrievanceSystem/1.0' }
+        });
+        
+        if (res.data && res.data.length > 0) {
+          setSuggestions(res.data);
+          setShowSuggestions(true);
+          
+          // Auto-pick the first result's coordinates immediately (like Flipkart)
+          const first = res.data[0];
+          setCoords({ lat: parseFloat(first.lat), lon: parseFloat(first.lon) });
+          
+          const addr = first.address || {};
+          const area = addr.suburb || addr.neighbourhood || addr.residential || addr.village || addr.town || first.display_name.split(',')[0];
+          const city = addr.city || addr.county || addr.state || "Bhopal";
+          setWard(area);
+          setZone(city);
+        }
+      } catch (err) {
+        console.error("Search failed", err);
+      } finally {
+        setGeocoding(false);
+      }
+    }, 500); // Super fast: 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [location, isManualInput]);
+
+  const handleSuggestionClick = (sug) => {
+    setLocation(sug.display_name);
+    setCoords({ lat: parseFloat(sug.lat), lon: parseFloat(sug.lon) });
+    
+    const addr = sug.address || {};
+    const area = addr.suburb || addr.neighbourhood || addr.residential || addr.village || addr.town || sug.display_name.split(',')[0];
+    const city = addr.city || addr.county || addr.state || "Bhopal";
+    setWard(area);
+    setZone(city);
+    
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setIsManualInput(false);
+  };
 
   const DEPARTMENTS = [
     'Municipal Corporation',
@@ -124,6 +198,8 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
       formData.append('department', selectedDept);
       formData.append('userAadhar', userAadhar);
       if (image) formData.append('image', image);
+      if (ward) formData.append('ward', ward);
+      if (zone) formData.append('zone', zone);
 
       const response = await axios.post('http://localhost:5000/api/complaints', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -154,7 +230,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.25rem' }}>{t('admin.dept').toUpperCase()}</p>
-              <p style={{ fontWeight: 800, fontSize: '1rem', color: '#1e40af' }}>{result.department.toUpperCase()}</p>
+              <p style={{ fontWeight: 800, fontSize: '1rem', color: '#1e40af' }}>{translateDept(result.department, t).toUpperCase()}</p>
             </div>
           </div>
           <div style={{ height: '1px', background: 'var(--gov-border)' }}></div>
@@ -239,21 +315,106 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
               </button>
             </label>
             <div style={{ position: 'relative' }}>
-              <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
               <input 
-                type="text" 
                 className="form-input" 
-                style={{ paddingLeft: '3rem' }}
+                style={{ paddingLeft: '2.5rem', paddingRight: '3rem' }}
                 placeholder={t('form.location')}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setIsManualInput(true);
+                }}
                 required
               />
+              <MapPin size={20} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
+              <button 
+                type="button"
+                onClick={() => setIsManualInput(true)}
+                style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gov-navy)' }}
+              >
+                <Navigation size={18} />
+              </button>
+
+              {/* Autocomplete Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{ 
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, 
+                  background: 'white', borderRadius: '12px', marginTop: '5px', 
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--gov-border)',
+                  maxHeight: '250px', overflowY: 'auto'
+                }}>
+                  {suggestions.map((sug, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => handleSuggestionClick(sug)}
+                      style={{ 
+                        padding: '12px 16px', cursor: 'pointer', borderBottom: idx === suggestions.length - 1 ? 'none' : '1px solid #f1f5f9',
+                        fontSize: '0.85rem', color: 'var(--gov-navy)', transition: 'background 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <MapPin size={16} color="var(--gov-text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <span>{sug.display_name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {coords.lat && (
-              <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', fontWeight: 800 }}>
-                ✓ {t('form.coordsCaptured')}: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
+            
+            {geocoding && (
+              <p style={{ fontSize: '0.7rem', color: 'var(--gov-navy)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Loader2 size={12} className="animate-spin" /> Fetching coordinates for address...
               </p>
+            )}
+
+            {coords.lat && !geocoding && (
+              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #dcfce7' }}>
+                <p style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                   <ShieldCheck size={14} /> {t('form.gpsCaptured')}: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gov-text-muted)' }}>Assigned Area:</span>
+                  <input 
+                    type="text" 
+                    value={ward || ''} 
+                    onChange={(e) => setWard(e.target.value)}
+                    style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-navy)', border: 'none', background: 'transparent', borderBottom: '1px solid #dcfce7', width: 'auto', outline: 'none' }}
+                  />
+                  <RefreshCw size={12} color="#15803d" style={{ cursor: 'pointer' }} onClick={() => setIsManualInput(true)} />
+                </div>
+              </div>
+            )}
+
+            <button 
+              type="button" 
+              onClick={() => setShowMap(!showMap)}
+              className="btn-gov-secondary"
+              style={{ width: '100%', marginTop: '0.5rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            >
+              <MapPin size={16} /> {showMap ? 'Hide Map' : 'Select on Map'}
+            </button>
+
+            {showMap && (
+              <div style={{ marginTop: '1rem' }}>
+                <MapPicker 
+                  initialPos={coords.lat && coords.lon ? [coords.lat, coords.lon] : null}
+                  onLocationSelect={(data) => {
+                    setCoords({ lat: data.lat, lon: data.lon });
+                    setLocation(data.address);
+                    setIsManualInput(false); // Map selection is NOT manual typing
+                    
+                    // Extract Ward/Zone from address
+                    const parts = data.address.split(',').map(p => p.trim());
+                    const w = parts.find(p => p.toLowerCase().includes('ward'));
+                    const z = parts.find(p => p.toLowerCase().includes('zone'));
+                    if (w) setWard(w);
+                    if (z) setZone(z);
+                  }}
+                />
+              </div>
             )}
           </div>
 

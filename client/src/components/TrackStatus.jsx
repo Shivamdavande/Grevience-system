@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { translateDept, translateStatus } from '../utils/translationUtils';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,10 +34,10 @@ const TrackStatus = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'Pending': return <span className="badge badge-pending">{t('admin.pending')}</span>;
-      case 'In Progress': return <span className="badge badge-progress">{t('admin.inProgress')}</span>;
-      case 'Resolved': return <span className="badge badge-resolved">{t('admin.resolved')}</span>;
-      default: return <span className="badge">{status}</span>;
+      case 'Pending': return <span className="badge badge-pending">{translateStatus('Pending', t)}</span>;
+      case 'In Progress': return <span className="badge badge-progress">{translateStatus('In Progress', t)}</span>;
+      case 'Resolved': return <span className="badge badge-resolved">{translateStatus('Resolved', t)}</span>;
+      default: return <span className="badge">{translateStatus(status, t)}</span>;
     }
   };
 
@@ -117,7 +118,7 @@ const TrackStatus = () => {
                     <label className="form-label">{t('track.dept')}</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
                       <RefreshCw size={16} color="var(--gov-navy)" />
-                      {result.department}
+                      {translateDept(result.department, t)}
                     </div>
                   </div>
                   <div>
