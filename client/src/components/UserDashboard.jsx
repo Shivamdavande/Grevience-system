@@ -12,9 +12,6 @@ import {
   MapPin,
   Calendar,
   ChevronRight,
-<<<<<<< HEAD
-  Trash2
-=======
   Award,
   ShieldCheck,
   Globe,
@@ -29,7 +26,6 @@ import {
   FileText,
   Camera,
   Check
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
 } from 'lucide-react';
 
 const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
@@ -169,73 +165,6 @@ const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
               <span className="text-xs font-bold text-gray-400">{complaints.length} Applications Total</span>
             </div>
 
-<<<<<<< HEAD
-            {/* Expanded Section */}
-            {expandedId === item._id && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginTop: '0.5rem' }}
-              >
-                <div style={{ display: 'grid', gridTemplateColumns: item.status === 'Resolved' && item.resolutionImage ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px' }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>{t('user.originalDesc')}</p>
-                    <p style={{ margin: 0, fontSize: '0.95rem' }}>{item.text}</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>{t('user.locationLabel')}</p>
-                    <p style={{ margin: 0, fontSize: '0.95rem' }}>{item.location}</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem', fontWeight: 600 }}>{t('user.departmentLabel')}</p>
-                    <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 600 }}>{translateDept(item.department, t)}</p>
-                  </div>
-
-                  {item.status === 'Resolved' && item.resolutionImage && (
-                    <div style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                      <p style={{ color: '#10b981', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <CheckCircle2 size={16} /> {t('user.resolutionProof')}
-                      </p>
-                      <div style={{ width: '100%', height: '200px', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
-                        <img 
-                          src={item.resolutionImage.startsWith('data:') ? item.resolutionImage : `http://127.0.0.1:5000${item.resolutionImage}`} 
-                          alt="Resolution" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                      <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                        {t('user.resolvedMsg', { dept: translateDept(item.department, t) })}
-                      </p>
-                    </div>
-                  )}
-
-                  <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(item._id);
-                      }}
-                      style={{ 
-                        background: 'transparent', 
-                        border: '1px solid #ef4444', 
-                        color: '#ef4444', 
-                        padding: '0.5rem 1rem', 
-                        borderRadius: '8px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.5rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.background = '#fee2e2';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      <Trash2 size={14} /> {t('user.deleteComplaint') || "Delete Complaint"}
-                    </button>
-                  </div>
-=======
             {loading ? (
               <div className="py-20 flex flex-col items-center justify-center gap-4 bg-white rounded-3xl border border-gray-100 shadow-sm">
                 <RefreshCw className="w-12 h-12 text-gov-navy animate-spin" />
@@ -245,7 +174,6 @@ const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
               <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <AlertCircle className="w-10 h-10 text-gray-300" />
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
                 </div>
                 <h4 className="text-xl font-bold text-gov-navy">No grievances found</h4>
                 <p className="text-gray-400 mt-2 max-w-xs mx-auto">You haven't filed any complaints yet. Start by clicking the 'File New Grievance' button.</p>

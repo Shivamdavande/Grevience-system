@@ -282,46 +282,6 @@ const Dashboard = ({ user }) => {
             <ShieldCheck className="w-8 h-8 text-gov-saffron" />
             <h1 className="text-xl font-serif font-bold tracking-tight">Admin Portal</h1>
           </div>
-<<<<<<< HEAD
-
-          <div className="header-badges">
-            {isMunicipalAdmin && (
-              <button
-                onClick={() => setPerfModalOpen(true)}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(10px)',
-                  padding: '0.8rem 1.5rem',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  transition: 'all 0.2s'
-                }}
-              >
-                <BarChart3 size={18} />
-                {t('admin.deptPerformance')}
-              </button>
-            )}
-            {!isMunicipalAdmin && (
-              <div className="glass-card" style={{
-                background: 'rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(10px)',
-                padding: '1.25rem 2rem',
-                borderRadius: '20px',
-                border: '1px solid rgba(255,255,255,0.2)',
-                textAlign: 'center'
-              }}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.8, marginBottom: '0.25rem', textTransform: 'uppercase' }}>{t('admin.deptRewards')}</p>
-                <h3 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 900 }}>{currentDeptTokens} <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('admin.tokens')}</span></h3>
-              </div>
-            )}
-=======
           <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
             <div className="w-10 h-10 rounded-full bg-gov-saffron flex items-center justify-center text-gov-navy font-bold">
               {user?.fullName?.[0] || 'A'}
@@ -330,7 +290,6 @@ const Dashboard = ({ user }) => {
               <p className="text-xs font-bold truncate">{user?.fullName || 'Administrator'}</p>
               <p className="text-[10px] opacity-60 truncate uppercase tracking-tighter">{userDepartment || 'Master Control'}</p>
             </div>
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
           </div>
         </div>
 
@@ -491,31 +450,6 @@ const Dashboard = ({ user }) => {
                             <div className={`p-2 rounded font-mono text-[10px] font-bold ${c.priority === 'High' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-gov-navy/5 text-gov-navy border border-gov-navy/10'}`}>
                               #{c._id.slice(-8).toUpperCase()}
                             </div>
-<<<<<<< HEAD
-                          ) : (
-                            <select
-                              value={c.status}
-                              onChange={(e) => handleStatusChange(c._id, e.target.value)}
-                              disabled={c.status === 'Resolved'}
-                              style={{
-                                padding: '0.5rem 1rem',
-                                borderRadius: '10px',
-                                border: '1px solid #cbd5e0',
-                                fontSize: '0.8rem',
-                                fontWeight: 700,
-                                background: c.status === 'Resolved' ? '#dcfce7' : c.status === 'In Progress' ? '#dbeafe' : 'white',
-                                color: c.status === 'Resolved' ? '#166534' : c.status === 'In Progress' ? '#1e40af' : 'inherit',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <option value="Pending">{t('admin.pending')}</option>
-                              <option value="In Progress">{t('admin.inProgress')}</option>
-                              <option value="Resolved">{t('admin.resolved')}</option>
-                            </select>
-                          )}
-
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-=======
                             <div className="max-w-xs">
                               <p className="text-sm font-bold text-gov-navy line-clamp-2 leading-snug">{c.text}</p>
                               <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold flex items-center gap-1">
@@ -564,7 +498,6 @@ const Dashboard = ({ user }) => {
                         </td>
                         <td className="p-6">
                           <div className="flex items-center gap-3">
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
                             {c.imageUrl && (
                               <button 
                                 onClick={() => setViewImageModal({ open: true, image: c.imageUrl, title: 'Reported Evidence', isAi: false })}
@@ -592,18 +525,15 @@ const Dashboard = ({ user }) => {
                                 <CheckCircle2 className="w-5 h-5" />
                               </button>
                             )}
-<<<<<<< HEAD
                             {isMunicipalAdmin && (
                               <button
                                 onClick={() => setEditCoordsModal({ open: true, complaintId: c._id, lat: c.lat || '', lon: c.lon || '' })}
-                                className="btn-gov-secondary" style={{ padding: '0.5rem', borderRadius: '10px' }}
+                                className="p-2 bg-gray-50 border border-gray-200 rounded-md hover:bg-white hover:border-gov-navy text-gov-navy transition-all shadow-sm"
                                 title="Edit Coordinates"
                               >
-                                <MapPin size={16} />
+                                <MapPin className="w-5 h-5" />
                               </button>
                             )}
-=======
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
                           </div>
                         </td>
                       </tr>

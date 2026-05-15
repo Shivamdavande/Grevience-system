@@ -3,13 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { translateDept } from '../utils/translationUtils';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-<<<<<<< HEAD
-import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck, RefreshCw, Navigation, Mic, MicOff } from 'lucide-react';
-import MapPicker from './MapPicker';
-
-const GrievanceForm = ({ userAadhar, onSuccess }) => {
-  const { t, i18n } = useTranslation();
-=======
 import {
   Send,
   MapPin,
@@ -34,7 +27,6 @@ import MapPicker from './MapPicker';
 const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
   const [text, setText] = useState('');
   const [location, setLocation] = useState('');
   const [coords, setCoords] = useState({ lat: null, lon: null });
@@ -139,12 +131,8 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
           setFetchingLocation(false);
         }
       },
-<<<<<<< HEAD
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-=======
       () => setFetchingLocation(false),
       { enableHighAccuracy: true, timeout: 10000 }
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
     );
   };
 
@@ -446,98 +434,11 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
                     </div>
                   </div>
 
-<<<<<<< HEAD
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {t('form.description')}
-              <button
-                type="button"
-                onClick={toggleListening}
-                className={`btn-gov-secondary ${isListening ? 'listening' : ''}`}
-                style={{ 
-                  fontSize: '0.7rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  background: isListening ? '#fee2e2' : 'transparent',
-                  borderColor: isListening ? '#ef4444' : 'var(--gov-navy)',
-                  color: isListening ? '#ef4444' : 'var(--gov-navy)'
-                }}
-              >
-                {isListening ? (
-                  <><MicOff size={14} className="animate-pulse" /> Stop Voice</>
-                ) : (
-                  <><Mic size={14} /> Voice Typing</>
-                )}
-              </button>
-            </label>
-            <textarea 
-              className="form-input" 
-              style={{ height: '150px', resize: 'none' }}
-              placeholder={t('form.description')}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              required={!image}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {t('form.location')}
-              <button 
-                type="button" 
-                onClick={fetchExactLocation}
-                className="btn-gov-secondary"
-                style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                disabled={fetchingLocation}
-              >
-                {fetchingLocation ? <Loader2 className="animate-spin" size={12} /> : <RefreshCw size={12} />} 
-                {fetchingLocation ? t('form.gpsRefreshing') : t('form.gpsRefresh')}
-              </button>
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                className="form-input" 
-                style={{ paddingLeft: '2.5rem', paddingRight: '3rem' }}
-                placeholder={t('form.location')}
-                value={location}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  setIsManualInput(true);
-                }}
-                required
-              />
-              <MapPin size={20} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-              <button 
-                type="button"
-                onClick={() => setIsManualInput(true)}
-                style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gov-navy)' }}
-              >
-                <Navigation size={18} />
-              </button>
-
-              {/* Autocomplete Suggestions Dropdown */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div style={{ 
-                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, 
-                  background: 'white', borderRadius: '12px', marginTop: '5px', 
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--gov-border)',
-                  maxHeight: '250px', overflowY: 'auto'
-                }}>
-                  {suggestions.map((sug, idx) => (
-                    <div 
-                      key={idx}
-                      onClick={() => handleSuggestionClick(sug)}
-                      style={{ 
-                        padding: '12px 16px', cursor: 'pointer', borderBottom: idx === suggestions.length - 1 ? 'none' : '1px solid #f1f5f9',
-                        fontSize: '0.85rem', color: 'var(--gov-navy)', transition: 'background 0.2s'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
-                      onMouseOut={(e) => e.currentTarget.style.background = 'white'}
-=======
                   <div className="flex justify-end mt-12 pt-8 border-t">
                     <button
                       onClick={nextStep}
                       disabled={!image && !text}
                       className="bg-gov-navy hover:bg-gov-navy-deep text-white px-10 py-4 rounded-md font-bold flex items-center gap-3 transition-all disabled:opacity-50 shadow-lg"
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
                     >
                       Next: Location
                       <ArrowRight className="w-5 h-5" />

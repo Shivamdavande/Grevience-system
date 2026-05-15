@@ -23,11 +23,6 @@
   {
     "aadhar": "112233445566",
     "phone": "7489189731",
-<<<<<<< HEAD
-    "tokens": 90
-  },
-  {
-=======
     "tokens": 120,
     "name": "Sneha Patil",
     "rank": "Verified Reporter"
@@ -40,7 +35,6 @@
     "rank": "Infrastructure Guardian"
   },
   {
->>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
     "aadhar": "444444444444",
     "phone": "9770473055",
     "tokens": 30,
