@@ -105,16 +105,28 @@ const Dashboard = ({ user }) => {
     formData.append('complaintId', resolutionModal.complaintId);
 
     try {
-      const [aiRes, compareRes] = await Promise.all([
-        axios.post('http://localhost:5000/api/detect-ai-image', formData),
-        axios.post('http://localhost:5000/api/compare-images', formData)
-      ]);
+      // Execute both requests concurrently, but handle failures independently
+      const aiPromise = axios.post('http://localhost:5000/api/detect-ai-image', formData)
+        .catch(err => {
+          console.error("AI Detect failed", err);
+          return { data: { is_ai_generated: false, confidence: 0 } };
+        });
+
+      const comparePromise = axios.post('http://localhost:5000/api/compare-images', formData)
+        .catch(err => {
+          console.error("Compare failed", err);
+          return { data: { similarity_score: 0, is_match: true } };
+        });
+
+      const [aiRes, compareRes] = await Promise.all([aiPromise, comparePromise]);
+
       setAiDetection({ checked: true, loading: false, isAi: aiRes.data.is_ai_generated, confidence: aiRes.data.confidence });
       setSimilarity({ checked: true, loading: false, score: compareRes.data.similarity_score, isMatch: compareRes.data.is_match });
     } catch (err) {
       console.error("Verification failed", err);
-      setAiDetection(prev => ({ ...prev, loading: false }));
-      setSimilarity(prev => ({ ...prev, loading: false }));
+      // Ensure we exit loading state and mark as checked so "Pending..." disappears
+      setAiDetection(prev => ({ ...prev, loading: false, checked: true }));
+      setSimilarity(prev => ({ ...prev, loading: false, checked: true }));
     }
   };
 
@@ -140,7 +152,8 @@ const Dashboard = ({ user }) => {
       setSimilarity({ checked: false, loading: false, score: 0, isMatch: true });
     } catch (error) {
       console.error("Update failed", error);
-      alert("Failed to resolve grievance.");
+      const msg = error.response?.data?.error || "Failed to resolve grievance.";
+      alert(msg);
     }
   };
 
@@ -164,20 +177,40 @@ const Dashboard = ({ user }) => {
       return (selectedDeptFilter === 'All' || c.department === selectedDeptFilter);
     }
 
-    // STRICT ISOLATION for everyone else (including Ward-level Municipal and Road officers)
+    // STRICT ISOLATION for everyone else
     const matchesDept = userDepartment
       ? (c.department === userDepartment)
       : (selectedDeptFilter === 'All' || c.department === selectedDeptFilter);
     
+    // TEMPORARY FIX: Bypass ward/zone isolation for Sewage Department until mapping is fixed
+    if (userDepartment === 'Sewage Department') {
+      return matchesDept;
+    }
+
     // Normalize and compare wards/areas using flexible matching
-    const clean = (w) => w?.toLowerCase().replace(/ward|zone|area/g, '').trim();
+    const clean = (w) => (w || '').toLowerCase().replace(/ward|zone|area/g, '').trim();
     const cWard = clean(c.ward);
     const uWard = clean(userWard);
     const cZone = clean(c.zone);
     const uZone = clean(userZone);
 
-    const matchesWard = uWard ? (cWard === uWard || cWard?.includes(uWard) || uWard?.includes(cWard)) : true;
-    const matchesZone = uZone ? (cZone === uZone || cZone?.includes(uZone) || uZone?.includes(cZone)) : true;
+    const hasNumbers = (str) => /\d/.test(str);
+    
+    // If complaint location doesn't have ward numbers but user is assigned a numeric ward, we permit it 
+    // to prevent hiding complaints due to lack of ward mapping in reverse geocoding.
+    const matchesWard = uWard ? (
+      cWard === uWard || 
+      (cWard && cWard.includes(uWard)) || 
+      (cWard && uWard.includes(cWard)) || 
+      (!hasNumbers(cWard) && hasNumbers(uWard))
+    ) : true;
+
+    const matchesZone = uZone ? (
+      cZone === uZone || 
+      (cZone && cZone.includes(uZone)) || 
+      (cZone && uZone.includes(cZone)) || 
+      (!hasNumbers(cZone) && hasNumbers(uZone))
+    ) : true;
     
     return matchesDept && (matchesWard || matchesZone);
   });
@@ -271,17 +304,19 @@ const Dashboard = ({ user }) => {
                 {t('admin.deptPerformance')}
               </button>
             )}
-            <div className="glass-card" style={{
-              background: 'rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(10px)',
-              padding: '1.25rem 2rem',
-              borderRadius: '20px',
-              border: '1px solid rgba(255,255,255,0.2)',
-              textAlign: 'center'
-            }}>
-              <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.8, marginBottom: '0.25rem', textTransform: 'uppercase' }}>{t('admin.deptRewards')}</p>
-              <h3 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 900 }}>{currentDeptTokens} <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('admin.tokens')}</span></h3>
-            </div>
+            {!isMunicipalAdmin && (
+              <div className="glass-card" style={{
+                background: 'rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(10px)',
+                padding: '1.25rem 2rem',
+                borderRadius: '20px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                textAlign: 'center'
+              }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 800, opacity: 0.8, marginBottom: '0.25rem', textTransform: 'uppercase' }}>{t('admin.deptRewards')}</p>
+                <h3 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 900 }}>{currentDeptTokens} <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('admin.tokens')}</span></h3>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -428,6 +463,7 @@ const Dashboard = ({ user }) => {
                             <select
                               value={c.status}
                               onChange={(e) => handleStatusChange(c._id, e.target.value)}
+                              disabled={c.status === 'Resolved'}
                               style={{
                                 padding: '0.5rem 1rem',
                                 borderRadius: '10px',
@@ -471,13 +507,15 @@ const Dashboard = ({ user }) => {
                                 <CheckCircle2 size={16} />
                               </button>
                             )}
-                            <button
-                              onClick={() => setEditCoordsModal({ open: true, complaintId: c._id, lat: c.lat || '', lon: c.lon || '' })}
-                              className="btn-gov-secondary" style={{ padding: '0.5rem', borderRadius: '10px' }}
-                              title="Edit Coordinates"
-                            >
-                              <MapPin size={16} />
-                            </button>
+                            {isMunicipalAdmin && (
+                              <button
+                                onClick={() => setEditCoordsModal({ open: true, complaintId: c._id, lat: c.lat || '', lon: c.lon || '' })}
+                                className="btn-gov-secondary" style={{ padding: '0.5rem', borderRadius: '10px' }}
+                                title="Edit Coordinates"
+                              >
+                                <MapPin size={16} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </td>

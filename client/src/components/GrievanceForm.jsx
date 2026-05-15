@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { translateDept } from '../utils/translationUtils';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck, RefreshCw, Navigation } from 'lucide-react';
+import { Send, MapPin, Loader2, Camera, X, CheckCircle2, AlertCircle, FileText, UploadCloud, ShieldCheck, RefreshCw, Navigation, Mic, MicOff } from 'lucide-react';
 import MapPicker from './MapPicker';
 
 const GrievanceForm = ({ userAadhar, onSuccess }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [text, setText] = useState('');
   const [location, setLocation] = useState('');
   const [coords, setCoords] = useState({ lat: null, lon: null });
@@ -25,8 +25,68 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
   const [geocoding, setGeocoding] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      
+      recognition.onresult = (event) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            currentTranscript += transcript + ' ';
+          }
+        }
+        if (currentTranscript) {
+          setText(prev => prev + currentTranscript);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert(t('form.speechNotSupported') || "Speech recognition is not supported in your browser.");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      // Map i18n languages to SpeechRecognition locales
+      let langCode = 'en-IN';
+      if (i18n.language === 'hi') langCode = 'hi-IN';
+      else if (i18n.language === 'mr') langCode = 'mr-IN';
+      else if (i18n.language === 'bn') langCode = 'bn-IN';
+      else if (i18n.language === 'ta') langCode = 'ta-IN';
+      else if (i18n.language === 'te') langCode = 'te-IN';
+      
+      recognitionRef.current.lang = langCode;
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   const fetchExactLocation = () => {
     if (!navigator.geolocation) {
@@ -66,7 +126,7 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
         alert("Failed to get exact location. Please enable location permissions.");
         setFetchingLocation(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -134,16 +194,13 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           setSuggestions(res.data);
           setShowSuggestions(true);
           
-          // Auto-pick the first result's coordinates immediately (like Flipkart)
+          // Auto-pick the first result's ward/zone immediately
           const first = res.data[0];
-          const lat = parseFloat(first.lat);
-          const lon = parseFloat(first.lon);
-          setCoords({ lat, lon });
           
           const { area, city } = extractWardZone(first);
           setWard(area);
           setZone(city);
-          console.log(`Auto-synced: ${area}, ${city} at ${lat}, ${lon}`);
+          console.log(`Auto-synced: ${area}, ${city}`);
         }
       } catch (err) {
         console.error("Search failed", err);
@@ -200,7 +257,19 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
       const response = await axios.post('http://localhost:5000/api/analyze-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (response.data.description) setText(response.data.description);
+      let desc = response.data.description;
+      if (desc && i18n.language && i18n.language !== 'en') {
+        try {
+          const transRes = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${i18n.language}&dt=t&q=${encodeURIComponent(desc)}`);
+          if (transRes.data && transRes.data[0] && transRes.data[0][0]) {
+            desc = transRes.data[0][0][0];
+          }
+        } catch (e) {
+          console.error("Translation failed", e);
+        }
+      }
+      if (desc) setText(desc);
+
       if (response.data.category) {
         const cat = response.data.category.toLowerCase();
         let dept = 'Municipal Corporation';
@@ -330,7 +399,26 @@ const GrievanceForm = ({ userAadhar, onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">{t('form.description')}</label>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {t('form.description')}
+              <button
+                type="button"
+                onClick={toggleListening}
+                className={`btn-gov-secondary ${isListening ? 'listening' : ''}`}
+                style={{ 
+                  fontSize: '0.7rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  background: isListening ? '#fee2e2' : 'transparent',
+                  borderColor: isListening ? '#ef4444' : 'var(--gov-navy)',
+                  color: isListening ? '#ef4444' : 'var(--gov-navy)'
+                }}
+              >
+                {isListening ? (
+                  <><MicOff size={14} className="animate-pulse" /> Stop Voice</>
+                ) : (
+                  <><Mic size={14} /> Voice Typing</>
+                )}
+              </button>
+            </label>
             <textarea 
               className="form-input" 
               style={{ height: '150px', resize: 'none' }}

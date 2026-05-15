@@ -11,7 +11,8 @@ import {
   AlertCircle,
   MapPin,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import './UserDashboard.css';
 
@@ -50,6 +51,19 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
       fetchUserTokens();
     }
   }, [userAadhar]);
+
+  const handleDelete = async (id) => {
+    if (window.confirm(t('user.confirmDelete') || "Are you sure you want to delete this complaint? This will remove it from all departments as well.")) {
+      try {
+        await axios.delete(`http://127.0.0.1:5000/api/complaints/${id}`);
+        setComplaints(complaints.filter(c => c._id !== id));
+        if (expandedId === id) setExpandedId(null);
+      } catch (err) {
+        console.error('Error deleting complaint:', err);
+        alert(t('user.deleteError') || "Failed to delete complaint. Please try again.");
+      }
+    }
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -281,6 +295,37 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                       </p>
                     </div>
                   )}
+
+                  <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item._id);
+                      }}
+                      style={{ 
+                        background: 'transparent', 
+                        border: '1px solid #ef4444', 
+                        color: '#ef4444', 
+                        padding: '0.5rem 1rem', 
+                        borderRadius: '8px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = '#fee2e2';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <Trash2 size={14} /> {t('user.deleteComplaint') || "Delete Complaint"}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}

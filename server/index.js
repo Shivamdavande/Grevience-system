@@ -427,6 +427,18 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// 2.7 Delete complaint
+app.delete('/api/complaints/:id', async (req, res) => {
+  try {
+    const deleted = await Grievance.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Complaint not found' });
+    res.json({ message: 'Complaint deleted successfully' });
+  } catch (err) {
+    console.error('Delete Complaint Error:', err);
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
 // 3. Update status
 app.patch('/api/complaints/:id', async (req, res) => {
   const { status, resolutionImage, isAiGenerated, aiDetectionConfidence, similarityScore, isMatch, resolutionLat, resolutionLon, lat, lon } = req.body;
@@ -468,7 +480,12 @@ app.patch('/api/complaints/:id', async (req, res) => {
     // Token Award Logic
     if (status === 'Resolved' && !complaint.tokensAwarded) {
       const rewardMap = { 'High': 50, 'Medium': 30, 'Low': 10 };
-      const tokens = rewardMap[complaint.priority] || 10;
+      let tokens = rewardMap[complaint.priority] || 10;
+
+      // SPECIFIC REQUIREMENT: Sewage Department gets 0 tokens.
+      if (complaint.department === 'Sewage Department') {
+        tokens = 0;
+      }
 
       // Award to User (Update JSON file)
       try {
@@ -485,11 +502,15 @@ app.patch('/api/complaints/:id', async (req, res) => {
       }
 
       // Award to Department
-      await Department.findOneAndUpdate(
-        { name: complaint.department },
-        { $inc: { tokens: tokens } }
-      );
-      console.log(`Awarded ${tokens} tokens to department ${complaint.department}`);
+      if (tokens > 0) {
+        await Department.findOneAndUpdate(
+          { name: complaint.department },
+          { $inc: { tokens: tokens } }
+        );
+        console.log(`Awarded ${tokens} tokens to department ${complaint.department}`);
+      } else {
+        console.log(`Tokens not awarded for ${complaint.department}`);
+      }
 
       updateData.tokensAwarded = true;
     }

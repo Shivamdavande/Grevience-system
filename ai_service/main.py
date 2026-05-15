@@ -103,10 +103,10 @@ async def detect_ai_image(file: UploadFile = File(...)):
     print(f"AI Detection Raw Results: {results}")
     ai_confidence = 0
     for r in results:
-        if r['label'].lower() in ['artificial', 'ai', 'fake', 'synthetic']:
+        if r['label'].lower() in ['artificial', 'ai', 'fake', 'synthetic', 'generated']:
             ai_confidence = max(ai_confidence, r['score'])
     
-    is_ai = ai_confidence > 0.3
+    is_ai = ai_confidence > 0.05
     print(f"AI Confidence: {ai_confidence}, Is AI: {is_ai}")
     return {"is_ai_generated": is_ai, "confidence": round(ai_confidence * 100, 2)}
 
