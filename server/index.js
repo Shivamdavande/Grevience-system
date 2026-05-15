@@ -16,9 +16,23 @@ const User = require('./models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'jansahayak_secret_key_2026';
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+
+// Global Error Handlers to prevent crash
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.error(err.name, err.message);
+  // We keep it running for this dev environment
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥');
+  console.error(err.name, err.message);
+});
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -40,25 +54,48 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// --- Start Server Immediately ---
+app.listen(PORT, () => {
+  console.log(`\n🚀 [SERVER] Backend running on port ${PORT}`);
+  console.log(`🔗 [LOCAL] http://localhost:${PORT}`);
+  console.log('-------------------------------------------');
+});
+
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/grievance_system';
-mongoose.connect(MONGODB_URI)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/grievance_system';
+
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+})
   .then(async () => {
-    console.log('MongoDB Connected');
+    console.log('MongoDB Connected successfully');
     // Initialize Departments
-    const depts = [
-      'Municipal Corporation',
-      'Road Department',
-      'Sewage Department',
-      'Waste Department',
-      'Water Department',
-      'Electric Department'
-    ];
-    for (const name of depts) {
-      await Department.findOneAndUpdate({ name }, { name }, { upsert: true });
+    try {
+      const depts = [
+        'Municipal Corporation',
+        'Road Department',
+        'Sewage Department',
+        'Waste Department',
+        'Water Department',
+        'Electric Department'
+      ];
+      for (const name of depts) {
+        await Department.findOneAndUpdate({ name }, { name }, { upsert: true });
+      }
+    } catch (deptErr) {
+      console.error('Error initializing departments:', deptErr.message);
     }
   })
-  .catch(err => console.log('MongoDB Connection Error:', err));
+  .catch(err => {
+    console.error('CRITICAL: MongoDB Connection Failed.');
+    console.error('Ensure MongoDB is running on localhost:27017 or set MONGODB_URI.');
+    console.error('Error details:', err.message);
+  });
+
+// Handle connection errors after initial connection
+mongoose.connection.on('error', err => {
+  console.error('MongoDB post-connection error:', err);
+});
 
 // Routes
 
@@ -96,7 +133,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
       try {
         await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID)
           .verifications
-          .create({to: phone, channel: 'sms'});
+          .create({ to: phone, channel: 'sms' });
         console.log(`Twilio Verify requested for ${phone}`);
       } catch (twilioErr) {
         console.error('Twilio Verify API Error:', twilioErr.message);
@@ -152,8 +189,8 @@ app.post('/api/auth/verify-otp', async (req, res) => {
       try {
         const verificationCheck = await twilioClient.verify.v2.services(process.env.TWILIO_SERVICE_SID)
           .verificationChecks
-          .create({to: phone, code: otp});
-        
+          .create({ to: phone, code: otp });
+
         if (verificationCheck.status !== 'approved') {
           return res.status(400).json({ error: 'Invalid or expired OTP' });
         }
@@ -206,7 +243,7 @@ app.post('/api/dept/register', async (req, res) => {
     await user.save();
 
     const payload = { user: { id: user.id, department: user.department, fullName: user.fullName, ward: user.ward, zone: user.zone } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 
     res.status(201).json({ token, user: { id: user.id, fullName: user.fullName, department: user.department, ward: user.ward, zone: user.zone } });
   } catch (err) {
@@ -230,8 +267,8 @@ app.post('/api/dept/login', async (req, res) => {
   const { emailOrId, password } = req.body;
 
   try {
-    const user = await User.findOne({ 
-      $or: [{ email: emailOrId }, { employeeId: emailOrId }] 
+    const user = await User.findOne({
+      $or: [{ email: emailOrId }, { employeeId: emailOrId }]
     });
 
     if (!user) {
@@ -244,7 +281,7 @@ app.post('/api/dept/login', async (req, res) => {
     }
 
     const payload = { user: { id: user.id, department: user.department, fullName: user.fullName, ward: user.ward, zone: user.zone } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 
     res.json({ token, user: { id: user.id, fullName: user.fullName, department: user.department, ward: user.ward, zone: user.zone } });
   } catch (err) {
@@ -270,11 +307,11 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
 
 // 1. Submit a complaint (Supports Text + Image)
 app.post('/api/complaints', upload.single('image'), async (req, res) => {
-  const { text, location, lat, lon, department: userSelectedDepartment, userAadhar, ward, zone } = req.body;
+  const { text, location, lat, lon, department: userSelectedDepartment, userEmail, ward, zone } = req.body;
   const imageFile = req.file;
 
-  if (!userAadhar) {
-    return res.status(400).json({ error: 'User Aadhar is required' });
+  if (!userEmail) {
+    return res.status(400).json({ error: 'User Email is required' });
   }
 
   if (!text && !imageFile) {
@@ -352,7 +389,7 @@ app.post('/api/complaints', upload.single('image'), async (req, res) => {
       department: finalDepartment,
       imageUrl,
       imageDescription,
-      userAadhar,
+      userEmail,
       ward,
       zone
     });
@@ -388,8 +425,8 @@ app.get('/api/complaints/:id', async (req, res) => {
     // 1. Try full ObjectId lookup first if it looks like one
     if (id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id)) {
       complaint = await Grievance.findById(id);
-    } 
-    
+    }
+
     // 2. If not found or if it's an 8-char short ID, try suffix search
     if (!complaint && id.length === 8) {
       const allComplaints = await Grievance.find();
@@ -404,10 +441,10 @@ app.get('/api/complaints/:id', async (req, res) => {
   }
 });
 
-// 2.6 Get complaints by User Aadhar
-app.get('/api/complaints/user/:aadhar', async (req, res) => {
+// 2.6 Get complaints by User Email
+app.get('/api/complaints/user/:email', async (req, res) => {
   try {
-    const grievances = await Grievance.find({ userAadhar: req.params.aadhar }).sort({ createdAt: -1 });
+    const grievances = await Grievance.find({ userEmail: req.params.email }).sort({ createdAt: -1 });
     res.json(grievances);
   } catch (err) {
     res.status(500).json({ error: 'Server Error' });
@@ -419,9 +456,9 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of Earth in km
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
@@ -455,10 +492,10 @@ app.patch('/api/complaints/:id', async (req, res) => {
       if (complaint.lat && complaint.lon) {
         const distance = haversineDistance(complaint.lat, complaint.lon, resolutionLat, resolutionLon);
         console.log(`Resolution distance check: ${distance.toFixed(3)} km`);
-        
+
         // Threshold: 100 meters (0.1 km)
         if (distance > 0.1) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             error: `Resolution denied. You are too far from the original incident location (${(distance * 1000).toFixed(0)}m away). You must be within 100m to resolve the case.`,
             distance: distance
           });
@@ -490,13 +527,18 @@ app.patch('/api/complaints/:id', async (req, res) => {
       // Award to User (Update JSON file)
       try {
         const usersPath = path.join(__dirname, 'data', 'users.json');
-        const usersData = JSON.parse(fs.readFileSync(usersPath));
-        const userIndex = usersData.findIndex(u => u.aadhar === complaint.userAadhar);
+        let usersData = [];
+        if (fs.existsSync(usersPath)) {
+          usersData = JSON.parse(fs.readFileSync(usersPath));
+        }
+        const userIndex = usersData.findIndex(u => u.email === complaint.userEmail);
         if (userIndex !== -1) {
           usersData[userIndex].tokens = (usersData[userIndex].tokens || 0) + tokens;
-          fs.writeFileSync(usersPath, JSON.stringify(usersData, null, 2));
-          console.log(`Awarded ${tokens} tokens to user ${complaint.userAadhar}`);
+        } else {
+          usersData.push({ email: complaint.userEmail, tokens: tokens });
         }
+        fs.writeFileSync(usersPath, JSON.stringify(usersData, null, 2));
+        console.log(`Awarded ${tokens} tokens to user ${complaint.userEmail}`);
       } catch (err) {
         console.error('Error updating user tokens:', err);
       }
@@ -528,10 +570,10 @@ app.patch('/api/complaints/:id', async (req, res) => {
 });
 
 // 3.5 Get user tokens
-app.get('/api/user/:aadhar/tokens', async (req, res) => {
+app.get('/api/user/:email/tokens', async (req, res) => {
   try {
     const usersData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'users.json')));
-    const user = usersData.find(u => u.aadhar === req.params.aadhar);
+    const user = usersData.find(u => u.email === req.params.email);
     res.json({ tokens: user ? (user.tokens || 0) : 0 });
   } catch (err) {
     res.status(500).json({ error: 'Server Error' });
@@ -568,7 +610,7 @@ app.get('/api/public-stats', async (req, res) => {
   try {
     const resolvedCount = await Grievance.countDocuments({ status: 'Resolved' });
     const totalCount = await Grievance.countDocuments();
-    
+
     // Average AI Confidence
     const avgConfidenceResult = await Grievance.aggregate([
       { $match: { confidence: { $gt: 0 } } },
@@ -683,16 +725,14 @@ app.post('/api/compare-images', upload.single('image'), async (req, res) => {
       console.error("AI Service Response Error:", err.response.data);
     }
     if (resolutionFile && fs.existsSync(resolutionFile.path)) fs.unlinkSync(resolutionFile.path);
-    res.status(500).json({ 
-      error: 'Image comparison failed', 
+    res.status(500).json({
+      error: 'Image comparison failed',
       details: err.message,
       aiError: err.response ? err.response.data : null,
-      similarity_score: 0, 
-      is_match: false 
+      similarity_score: 0,
+      is_match: false
     });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend Server running on port ${PORT}`);
-});
+// Server listen moved to top for resilience

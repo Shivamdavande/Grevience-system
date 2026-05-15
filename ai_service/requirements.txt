@@ -6,3 +6,4 @@ pydantic
 pillow
 python-multipart
 scipy
+torchvision

@@ -2,14 +2,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 4rem;
   gap: 2rem;
 }
 
 .user-welcome-section h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  line-height: 1.2;
+  font-family: 'Lora', serif;
+  font-size: 3rem;
+  color: var(--gov-navy);
+  margin-bottom: 0.75rem;
+  line-height: 1.1;
+}
+
+.user-welcome-section p {
+  font-size: 1.1rem;
+  color: var(--gov-text-muted);
+  font-weight: 500;
 }
 
 .user-actions {
@@ -19,56 +27,76 @@
 }
 
 .grievance-card {
-  padding: 1.5rem;
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s;
+  gap: 2rem;
+  background-image: var(--paper-texture);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gov-border);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
+}
+
+.grievance-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-premium);
+  border-color: var(--gov-accent);
 }
 
 .grievance-card-content {
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .grievance-img-preview {
-  width: 120px;
-  height: 120px;
-  border-radius: 12px;
+  width: 160px;
+  height: 160px;
+  border-radius: 20px;
   overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  border: 1px solid var(--gov-border);
 }
 
-.grievance-info {
-  flex: 1;
-  min-width: 0; /* Allow text truncate to work */
+.grievance-info h3 {
+  font-family: 'Lora', serif;
+  font-size: 1.5rem;
+  color: var(--gov-navy);
+  margin-bottom: 1rem;
+}
+
+.grievance-info p {
+  color: var(--gov-text-muted);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
 }
 
 .grievance-meta {
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
   color: var(--gov-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   flex-wrap: wrap;
+}
+
+.grievance-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 @media (max-width: 768px) {
   .user-dashboard-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1.5rem;
+    gap: 2rem;
   }
   
   .user-welcome-section h1 {
-    font-size: 2rem;
-  }
-  
-  .user-actions {
-    width: 100%;
-    justify-content: space-between;
+    font-size: 2.25rem;
   }
   
   .grievance-card-content {
@@ -77,7 +105,7 @@
   
   .grievance-img-preview {
     width: 100%;
-    height: 180px;
+    height: 220px;
   }
 }
 

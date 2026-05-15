@@ -4,9 +4,9 @@
   "description": "AI Classification Service for Grievance System",
   "main": "main.py",
   "scripts": {
-    "start": "venv\\Scripts\\python.exe main.py",
-    "dev": "venv\\Scripts\\python.exe main.py",
-    "setup": "python -m venv venv && venv\\Scripts\\activate && pip install -r requirements.txt"
+    "start": ".\\venv\\Scripts\\python.exe main.py",
+    "dev": ".\\venv\\Scripts\\python.exe main.py",
+    "setup": "python -m venv venv && .\\venv\\Scripts\\activate && pip install -r requirements.txt"
   },
   "dependencies": {}
 }

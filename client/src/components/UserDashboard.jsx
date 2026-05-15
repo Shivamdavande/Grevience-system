@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { translateDept, translateStatus } from '../utils/translationUtils';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   PlusCircle, 
   Clock, 
@@ -12,11 +12,27 @@ import {
   MapPin,
   Calendar,
   ChevronRight,
+<<<<<<< HEAD
   Trash2
+=======
+  Award,
+  ShieldCheck,
+  Globe,
+  ArrowRight,
+  Shield,
+  Search,
+  LayoutDashboard,
+  User,
+  LogOut,
+  ChevronDown,
+  Building2,
+  FileText,
+  Camera,
+  Check
+>>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
 } from 'lucide-react';
-import './UserDashboard.css';
 
-const UserDashboard = ({ userAadhar, onReportIssue }) => {
+const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
   const { t } = useTranslation();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,11 +43,11 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
   useEffect(() => {
     const fetchUserComplaints = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:5000/api/complaints/user/${userAadhar}`);
+        const response = await axios.get(`http://localhost:5000/api/complaints/user/${userAadhar}`);
         setComplaints(response.data);
       } catch (err) {
         console.error('Error fetching complaints:', err);
-        setError('Failed to load your complaints. Please try again later.');
+        setError('Failed to load your complaints.');
       } finally {
         setLoading(false);
       }
@@ -39,7 +55,7 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
 
     const fetchUserTokens = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:5000/api/user/${userAadhar}/tokens`);
+        const response = await axios.get(`http://localhost:5000/api/user/${userAadhar}/tokens`);
         setUserTokens(response.data.tokens);
       } catch (err) {
         console.error('Error fetching tokens:', err);
@@ -67,200 +83,93 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Pending': return <Clock size={20} style={{ color: 'var(--warning)' }} />;
-      case 'In Progress': return <RefreshCw size={20} style={{ color: 'var(--primary)' }} className="animate-spin" />;
-      case 'Resolved': return <CheckCircle2 size={20} style={{ color: 'var(--success)' }} />;
-      default: return <Clock size={20} />;
+      case 'Pending': return <Clock className="w-5 h-5" />;
+      case 'In Progress': return <RefreshCw className="w-5 h-5 animate-spin" />;
+      case 'Resolved': return <CheckCircle2 className="w-5 h-5" />;
+      default: return <Clock className="w-5 h-5" />;
     }
   };
 
-  const getStatusBadgeStyle = (status) => {
-    const base = {
-      padding: '0.25rem 0.75rem',
-      borderRadius: '20px',
-      fontSize: '0.8rem',
-      fontWeight: '600',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.4rem'
-    };
-
+  const getStatusColor = (status) => {
     switch (status) {
-      case 'Pending': return { ...base, backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' };
-      case 'In Progress': return { ...base, backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' };
-      case 'Resolved': return { ...base, backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' };
-      default: return base;
+      case 'Pending': return 'bg-amber-50 text-amber-600 border-amber-200';
+      case 'In Progress': return 'bg-blue-50 text-blue-600 border-blue-200';
+      case 'Resolved': return 'bg-green-50 text-gov-green border-green-200';
+      default: return 'bg-gray-50 text-gray-600 border-gray-200';
     }
   };
 
   return (
-    <div className="user-dashboard-container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
-      <header className="user-dashboard-header">
-        <div className="user-welcome-section">
-          <h1 style={{ fontWeight: 800 }}>{t('nav.home')} <span style={{ color: 'var(--gov-navy)' }}>{t('nav.dashboard')}</span></h1>
-          <p style={{ color: 'var(--gov-text-muted)' }}>{t('user.welcome')}</p>
-        </div>
-        <div className="user-actions">
-          <motion.div 
-            className="reward-badge" 
-            style={{ 
-              padding: '0.8rem 1.5rem', 
-              borderRadius: '12px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem',
-              background: '#fffbeb',
-              border: '1px solid #fef08a'
-            }}
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-          >
-            <div style={{ background: '#eab308', padding: '0.4rem', borderRadius: '50%', display: 'flex' }}>
-              <PlusCircle size={16} color="white" />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Citizen Header */}
+      <header className="bg-gov-navy text-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-gov-saffron rounded-lg shadow-inner">
+              <ShieldCheck className="w-8 h-8 text-gov-navy" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '0.65rem', color: '#854d0e', fontWeight: 800, textTransform: 'uppercase' }}>{t('user.rewards')}</p>
-              <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, color: '#854d0e' }}>{userTokens} {t('user.tokens')}</p>
+              <h1 className="text-xl font-serif font-bold tracking-tight">Citizen Portal</h1>
+              <p className="text-[10px] text-gov-saffron uppercase font-bold tracking-widest">Government of India</p>
             </div>
-          </motion.div>
-          <button 
-            className="btn-gov-primary" 
-            onClick={onReportIssue}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 1.5rem', borderRadius: '12px' }}
-          >
-            <PlusCircle size={20} /> {t('nav.report')}
-          </button>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-white/10 rounded-full border border-white/20">
+              <div className="p-1.5 bg-gov-saffron rounded-full">
+                <Award className="w-4 h-4 text-gov-navy" />
+              </div>
+              <div className="text-sm font-bold">
+                <span className="text-gov-saffron">{userTokens}</span> Credits
+              </div>
+            </div>
+            <button 
+              onClick={onLogout}
+              className="p-2 hover:bg-white/10 rounded-full transition-all text-white/70 hover:text-white"
+            >
+              <LogOut className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       </header>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '4rem' }}>
-          <RefreshCw size={40} className="animate-spin" style={{ color: 'var(--primary)', marginBottom: '1rem' }} />
-          <p style={{ color: 'var(--text-muted)' }}>{t('user.loadingGrievances')}</p>
-        </div>
-      ) : error ? (
-        <div className="glass" style={{ padding: '3rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-          <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
-          <p style={{ color: '#ef4444', fontWeight: '500' }}>{error}</p>
-        </div>
-      ) : complaints.length === 0 ? (
-        <motion.div 
-          className="glass" 
-          style={{ padding: '4rem', textAlign: 'center' }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ 
-              width: '80px', 
-              height: '80px', 
-              backgroundColor: 'rgba(255,255,255,0.05)', 
-              borderRadius: '50%', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              margin: '0 auto'
-            }}>
-              <AlertCircle size={40} style={{ color: 'var(--text-muted)' }} />
+      <main className="flex-grow p-4 sm:p-8">
+        <div className="max-w-5xl mx-auto space-y-8">
+          {/* Welcome Section */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+              <Building2 className="w-48 h-48 text-gov-navy" />
             </div>
-          </div>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{t('user.noGrievances')}</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>{t('user.noGrievancesSub')}</p>
-          <button 
-            className="btn-primary" 
-            onClick={onReportIssue}
-            style={{ padding: '0.8rem 2rem' }}
-          >
-            {t('nav.report')}
-          </button>
-        </motion.div>
-      ) : (
-        <div style={{ display: 'grid', gap: '1.5rem' }}>
-          {complaints.map((item, index) => (
-            <motion.div 
-              key={item._id}
-              className="gov-card grievance-card" 
-              style={{ padding: '1.5rem' }}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ scale: 1.01, background: '#fff' }}
-              onClick={() => setExpandedId(expandedId === item._id ? null : item._id)}
+            <div className="relative z-10">
+              <h2 className="text-3xl font-serif text-gov-navy font-bold">Welcome back, Citizen</h2>
+              <p className="text-gray-500 mt-2 font-medium">Track your reported grievances and help build a better community.</p>
+              <div className="flex items-center gap-4 mt-6">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Aadhar Reference</span>
+                  <span className="text-sm font-mono font-bold text-gov-navy tracking-widest">XXXX-XXXX-{userAadhar?.slice(-4)}</span>
+                </div>
+              </div>
+            </div>
+            <button 
+              onClick={onNewGrievance}
+              className="relative z-10 px-8 py-4 bg-gov-navy text-white rounded-xl font-bold flex items-center gap-3 hover:bg-gov-navy-deep transition-all shadow-xl hover:shadow-gov-navy/20"
             >
-              <div className="grievance-card-content">
-              {/* Image Preview if exists */}
-              {item.imageUrl && (
-                <div className="grievance-img-preview">
-                  <img 
-                    src={`http://127.0.0.1:5000${item.imageUrl}`} 
-                    alt="Grievance" 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-              )}
+              <PlusCircle className="w-6 h-6 text-gov-saffron" />
+              File New Grievance
+            </button>
+          </div>
 
-              <div className="grievance-info">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', gap: '1rem', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div style={getStatusBadgeStyle(item.status)}>
-                      {getStatusIcon(item.status)}
-                      {translateStatus(item.status, t)}
-                    </div>
-                    <span style={{ color: 'var(--gov-text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>
-                      ID: #{item._id.slice(-8).toUpperCase()}
-                    </span>
-                  </div>
-                  <div style={{ 
-                    backgroundColor: item.priority === 'High' ? '#fee2e2' : '#f1f5f9',
-                    color: item.priority === 'High' ? '#ef4444' : 'var(--gov-text-muted)',
-                    padding: '0.2rem 0.6rem',
-                    borderRadius: '4px',
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    textTransform: 'uppercase'
-                  }}>
-                    {item.priority}
-                  </div>
-                </div>
-
-                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: 'var(--gov-navy)', fontWeight: 800 }}>{item.category}</h3>
-                <p style={{ 
-                  margin: '0 0 1rem 0', 
-                  color: 'var(--gov-text-muted)', 
-                  display: '-webkit-box', 
-                  WebkitLineClamp: 2, 
-                  WebkitBoxOrient: 'vertical', 
-                  overflow: 'hidden',
-                  fontSize: '0.9rem',
-                  lineHeight: '1.6'
-                }}>
-                  {item.text}
-                </p>
-
-                <div className="grievance-meta">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <MapPin size={14} />
-                    {item.location.split(',')[0]}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Calendar size={14} />
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-
-              <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', paddingLeft: '1rem' }}>
-                <ChevronRight 
-                  size={20} 
-                  style={{ 
-                    color: 'var(--gov-border)', 
-                    transform: expandedId === item._id ? 'rotate(90deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.3s'
-                  }} 
-                />
-              </div>
+          {/* Grievances List */}
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gov-navy uppercase tracking-widest flex items-center gap-3">
+                <FileText className="w-5 h-5 text-gov-saffron" />
+                Your Submissions
+              </h3>
+              <span className="text-xs font-bold text-gray-400">{complaints.length} Applications Total</span>
             </div>
 
+<<<<<<< HEAD
             {/* Expanded Section */}
             {expandedId === item._id && (
               <motion.div 
@@ -326,13 +235,157 @@ const UserDashboard = ({ userAadhar, onReportIssue }) => {
                       <Trash2 size={14} /> {t('user.deleteComplaint') || "Delete Complaint"}
                     </button>
                   </div>
+=======
+            {loading ? (
+              <div className="py-20 flex flex-col items-center justify-center gap-4 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <RefreshCw className="w-12 h-12 text-gov-navy animate-spin" />
+                <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Accessing Records...</p>
+              </div>
+            ) : complaints.length === 0 ? (
+              <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
+                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <AlertCircle className="w-10 h-10 text-gray-300" />
+>>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
                 </div>
-              </motion.div>
+                <h4 className="text-xl font-bold text-gov-navy">No grievances found</h4>
+                <p className="text-gray-400 mt-2 max-w-xs mx-auto">You haven't filed any complaints yet. Start by clicking the 'File New Grievance' button.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {complaints.map((complaint) => (
+                  <motion.div
+                    key={complaint._id}
+                    layout
+                    className={`bg-white rounded-2xl border transition-all overflow-hidden ${expandedId === complaint._id ? 'border-gov-navy ring-4 ring-gov-navy/5 shadow-xl' : 'border-gray-100 hover:border-gray-200 shadow-sm'}`}
+                  >
+                    <div 
+                      onClick={() => setExpandedId(expandedId === complaint._id ? null : complaint._id)}
+                      className="p-6 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+                    >
+                      <div className="flex items-center gap-6">
+                        <div className={`p-4 rounded-xl ${complaint.status === 'Resolved' ? 'bg-green-50 text-gov-green' : 'bg-gov-navy/5 text-gov-navy'}`}>
+                          {getStatusIcon(complaint.status)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID: #{complaint._id.slice(-6).toUpperCase()}</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-tighter ${getStatusColor(complaint.status)}`}>
+                              {translateStatus(complaint.status, t)}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-serif font-bold text-gov-navy mt-1 line-clamp-1">{complaint.text}</h4>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {complaint.location.split(',')[0]}
+                            </span>
+                            <span className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {new Date(complaint.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-none pt-4 sm:pt-0">
+                        <div className="flex -space-x-2">
+                          {complaint.imageUrl && <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden"><img src={`http://localhost:5000${complaint.imageUrl}`} className="w-full h-full object-cover" /></div>}
+                          {complaint.resolutionImage && <div className="w-8 h-8 rounded-full border-2 border-white bg-gov-green overflow-hidden flex items-center justify-center text-white"><Check className="w-4 h-4" /></div>}
+                        </div>
+                        <motion.div animate={{ rotate: expandedId === complaint._id ? 180 : 0 }}>
+                          <ChevronDown className="w-6 h-6 text-gray-300" />
+                        </motion.div>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {expandedId === complaint._id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-gray-50 bg-gray-50/50"
+                        >
+                          <div className="p-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                              <div className="space-y-8">
+                                <div>
+                                  <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Incident Particulars</h5>
+                                  <p className="text-gov-navy font-medium leading-relaxed">{complaint.text}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                  <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                                    <h6 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Assigned Unit</h6>
+                                    <p className="text-xs font-bold text-gov-navy">{translateDept(complaint.department, t)}</p>
+                                  </div>
+                                  <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                                    <h6 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status Reference</h6>
+                                    <p className="text-xs font-bold text-gov-navy">{translateStatus(complaint.status, t)}</p>
+                                  </div>
+                                </div>
+
+                                {complaint.status === 'Resolved' && (
+                                  <div className="p-6 bg-green-50 border border-green-100 rounded-2xl flex gap-4">
+                                    <div className="p-3 bg-white rounded-xl text-gov-green shadow-sm shrink-0 h-fit">
+                                      <CheckCircle2 className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                      <h6 className="text-sm font-bold text-gov-green">Resolution Confirmed</h6>
+                                      <p className="text-xs text-green-700 mt-1 leading-relaxed">
+                                        The respective department has verified the redressal of your grievance. Thank you for your contribution to the community.
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-6">
+                                <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Verification Media</h5>
+                                <div className="grid grid-cols-2 gap-4">
+                                  {complaint.imageUrl && (
+                                    <div className="space-y-2">
+                                      <span className="text-[9px] font-bold text-gray-400 uppercase px-1">Original Evidence</span>
+                                      <div className="aspect-video rounded-xl overflow-hidden border-2 border-white shadow-md bg-gray-200">
+                                        <img src={`http://localhost:5000${complaint.imageUrl}`} className="w-full h-full object-cover" />
+                                      </div>
+                                    </div>
+                                  )}
+                                  {complaint.resolutionImage && (
+                                    <div className="space-y-2">
+                                      <span className="text-[9px] font-bold text-gov-green uppercase px-1">Resolution Proof</span>
+                                      <div className="aspect-video rounded-xl overflow-hidden border-2 border-gov-green shadow-md bg-gray-200">
+                                        <img src={complaint.resolutionImage} className="w-full h-full object-cover" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
+              </div>
             )}
-          </motion.div>
-          ))}
+          </div>
         </div>
-      )}
+      </main>
+
+      {/* Footer Info */}
+      <footer className="bg-white border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+            Digital India Initiative | © {new Date().getFullYear()} National Administrative Portal
+          </p>
+          <div className="flex justify-center gap-6 mt-4 opacity-30">
+            <Globe className="w-5 h-5" />
+            <Shield className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5" />
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -1,17 +1,69 @@
 .auth-container {
-  max-width: 480px;
-  margin: 0 auto;
-  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: linear-gradient(rgba(0, 33, 71, 0.8), rgba(0, 33, 71, 0.7)), url("https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=2000");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
 .auth-card {
-  padding: 3rem 2.5rem;
-  border-top: 5px solid var(--gov-navy);
+  width: 100%;
+  max-width: 500px;
+  background: var(--gov-white);
+  background-image: var(--paper-texture);
+  padding: 4rem;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card h2 {
+  font-family: 'Lora', serif;
+  font-size: 2.5rem;
+  color: var(--gov-navy);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.auth-card p {
+  color: var(--gov-text-muted);
+  text-align: center;
+  margin-bottom: 3rem;
+  font-weight: 500;
+}
+
+.auth-card .form-group {
+  margin-bottom: 2rem;
+}
+
+.auth-card label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: var(--gov-navy);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.auth-card .btn-gov-primary {
+  width: 100%;
+  justify-content: center;
+  padding: 1.25rem;
+  font-size: 1.1rem;
+  border-radius: 18px;
+  margin-top: 1rem;
 }
 
 .auth-form-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .auth-card.register-mode .auth-form-grid {
@@ -22,22 +74,23 @@
   grid-template-columns: 1fr;
 }
 
-.auth-card.register-mode .auth-submit-section {
-  grid-column: span 2;
-}
-
 @media (max-width: 768px) {
-  .auth-card.register-mode .auth-form-grid {
-    grid-template-columns: 1fr;
+  .auth-card {
+    padding: 3rem 2rem !important;
+    border-radius: 32px;
   }
   
-  .auth-card.register-mode .auth-submit-section {
-    grid-column: span 1;
+  .auth-card.register-mode .auth-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 480px) {
   .auth-card {
-    padding: 2rem 1.5rem !important;
+    padding: 2.5rem 1.5rem !important;
+  }
+  
+  .auth-card h2 {
+    font-size: 2rem !important;
   }
 }

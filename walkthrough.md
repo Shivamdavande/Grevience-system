@@ -1,5 +1,11 @@
 # Walkthrough - Image-Based Grievance Reporting
 
+### 🚀 Premium UI Evolution
+- **Grievance Form Overhaul**: Transitioned from a cluttered split-view to a **centered, 3-step interactive flow** (Issue -> Location -> Identity).
+- **Official Imagery**: Integrated high-resolution, context-aware imagery (India Gate, administrative desks, digital infrastructure) to align with official government standards.
+- **Interactive Experience**: Implemented `framer-motion` for fluid transitions between form steps and enhanced visual feedback for AI analysis.
+- **Handmade Aesthetic**: Maintained the tactile "paper-texture" design system across all new components, ensuring a cohesive and premium feel.
+
 ## Update: Automatic Image Description
 I have enhanced the system so that the AI automatically writes the description as soon as you upload a photo.
 

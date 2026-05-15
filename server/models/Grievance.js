@@ -87,7 +87,7 @@ const GrievanceSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-  userAadhar: {
+  userEmail: {
     type: String,
     required: true,
   },

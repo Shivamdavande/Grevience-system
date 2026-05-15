@@ -17,7 +17,10 @@ blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
 print("Loading AI Image Detector...")
-ai_image_detector = pipeline("image-classification", model="umm-maybe/AI-image-detector")
+from transformers import AutoImageProcessor, AutoModelForImageClassification
+ai_detector_processor = AutoImageProcessor.from_pretrained('microsoft/swin-tiny-patch4-window7-224')
+ai_detector_model = AutoModelForImageClassification.from_pretrained('umm-maybe/AI-image-detector')
+ai_image_detector = pipeline("image-classification", model=ai_detector_model, image_processor=ai_detector_processor)
 
 print("Loading Image Comparison Model (CLIP)...")
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")

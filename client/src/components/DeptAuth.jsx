@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, Mail, Shield, Building2, BadgeCheck, Phone, Lock, MapPin, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import { User, Mail, Shield, Building2, BadgeCheck, Phone, Lock, MapPin, ArrowRight, UserPlus, LogIn, ShieldCheck, Globe, Zap, AlertCircle, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { translateDept } from '../utils/translationUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DeptAuth = ({ onLogin }) => {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ const DeptAuth = ({ onLogin }) => {
     mobile: '',
     password: '',
     officeLocation: '',
-    emailOrId: '', // For login
+    emailOrId: '', 
     ward: '',
     zone: ''
   });
@@ -67,245 +68,202 @@ const DeptAuth = ({ onLogin }) => {
   };
 
   return (
-    <div className="dept-auth-container" style={{
-      minHeight: '80vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem 1rem',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
-    }}>
-      <div className={`auth-card ${isLogin ? 'login-mode' : 'register-mode'}`} style={{
-        background: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '24px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        width: '100%',
-        maxWidth: isLogin ? '450px' : '800px',
-        padding: '2.5rem',
-        border: '1px solid rgba(255, 255, 255, 0.5)',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            background: 'var(--gov-navy)',
-            color: 'white',
-            width: '64px',
-            height: '64px',
-            borderRadius: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1rem',
-            boxShadow: '0 10px 15px -3px rgba(15, 23, 42, 0.3)'
-          }}>
-            {isLogin ? <LogIn size={32} /> : <UserPlus size={32} />}
-          </div>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 800, color: 'var(--gov-navy)', margin: 0 }}>
-            {isLogin ? t('auth.loginToDashboard') : t('auth.officerRegistration')}
-          </h2>
-          <p style={{ color: 'var(--gov-text-muted)', marginTop: '0.5rem', fontWeight: 500 }}>
-            {isLogin ? t('auth.accessDashboard') : t('auth.joinNetwork')}
-          </p>
-        </div>
-
-        {error && (
-          <div style={{
-            background: '#fee2e2',
-            color: '#dc2626',
-            padding: '1rem',
-            borderRadius: '12px',
-            marginBottom: '1.5rem',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            textAlign: 'center',
-            border: '1px solid #fecaca'
-          }}>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="auth-form-grid">
-          {isLogin ? (
-            <>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.emailOrId')}</label>
-                <div style={{ position: 'relative' }}>
-                  <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input
-                    type="text"
-                    name="emailOrId"
-                    required
-                    value={formData.emailOrId}
-                    onChange={handleChange}
-                    placeholder={t('auth.enterEmailOrId')}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem 1rem 0.75rem 2.75rem',
-                      borderRadius: '12px',
-                      border: '1px solid #e2e8f0',
-                      outline: 'none',
-                      fontSize: '1rem'
-                    }}
-                  />
-                </div>
+    <div className="min-h-screen bg-white flex overflow-hidden">
+      {/* Left Side: Professional Imagery (Hidden on mobile) */}
+      <div className="hidden lg:block lg:w-1/2 relative">
+          <img 
+            src="/high.jpeg" 
+            alt="Government Administrative Building" 
+            className="w-full h-full object-cover"
+          />
+        <div className="absolute inset-0 bg-gov-navy/80 flex items-center justify-center p-20">
+          <div className="text-white max-w-lg">
+            <div className="flex items-center gap-4 mb-8">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/55/Emblem_of_India.svg" alt="Emblem" className="h-20 invert brightness-0" />
+              <div>
+                <h1 className="text-3xl font-serif font-bold">Jansahayak Portal</h1>
+                <p className="text-gov-saffron font-bold text-xs uppercase tracking-widest">Administrative Control Center</p>
               </div>
-            </>
-          ) : (
-            <>
-              {/* Registration Fields */}
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.fullName')}</label>
-                <div style={{ position: 'relative' }}>
-                  <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="text" name="fullName" required value={formData.fullName} onChange={handleChange} placeholder="Ghanshyam Dhote" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
+            </div>
+            <h2 className="text-5xl font-serif mb-6 leading-tight">Empowering Governance Through AI</h2>
+            <p className="text-xl text-gray-300 leading-relaxed font-light">
+              Official gateway for departmental officers to manage, analyze, and resolve public grievances with precision and accountability.
+            </p>
+            
+            <div className="mt-12 grid grid-cols-2 gap-8">
+              <div className="flex flex-col gap-2">
+                <div className="text-3xl font-bold text-gov-saffron">98.4%</div>
+                <div className="text-xs font-bold uppercase tracking-widest opacity-60">AI Accuracy</div>
               </div>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.emailAddress')}</label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="officer@gov.in" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
+              <div className="flex flex-col gap-2">
+                <div className="text-3xl font-bold text-gov-saffron">Instant</div>
+                <div className="text-xs font-bold uppercase tracking-widest opacity-60">Dept Routing</div>
               </div>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.employeeId')}</label>
-                <div style={{ position: 'relative' }}>
-                  <Shield size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="text" name="employeeId" required value={formData.employeeId} onChange={handleChange} placeholder="EMP123456" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('admin.dept')}</label>
-                <div style={{ position: 'relative' }}>
-                  <Building2 size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <select name="department" value={formData.department} onChange={handleChange}
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', appearance: 'none', background: 'white' }}>
-                    {departments.map(dept => <option key={dept} value={dept}>{translateDept(dept, t)}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.designation')}</label>
-                <div style={{ position: 'relative' }}>
-                  <BadgeCheck size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="text" name="designation" required value={formData.designation} onChange={handleChange} placeholder="Executive Engineer" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.mobileNumber')}</label>
-                <div style={{ position: 'relative' }}>
-                  <Phone size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="tel" name="mobile" required value={formData.mobile} onChange={handleChange} placeholder="+91 9876543210" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.officeLocation')}</label>
-                <div style={{ position: 'relative' }}>
-                  <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="text" name="officeLocation" required value={formData.officeLocation} onChange={handleChange} placeholder="Zonal Office, Sector 5" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
-              </div>
-              
-              {/* Ward and Zone for ALL departments for regional isolation */}
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Ward Name/Number</label>
-                <div style={{ position: 'relative' }}>
-                  <Building2 size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="text" name="ward" required={formData.department !== 'Public Works Department'} value={formData.ward} onChange={handleChange} placeholder="e.g. Ward 12 or Kokta" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>Zone / Area</label>
-                <div style={{ position: 'relative' }}>
-                  <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-                  <input type="text" name="zone" value={formData.zone} onChange={handleChange} placeholder="e.g. East Zone or Anandnagar" 
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="form-group">
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--gov-navy)', marginBottom: '0.5rem' }}>{t('auth.password')}</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gov-text-muted)' }} />
-              <input
-                type="password"
-                name="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 2.75rem',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  outline: 'none',
-                  fontSize: '1rem'
-                }}
-              />
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="auth-submit-section" style={{ marginTop: '1rem' }}>
-            <button
-              type="submit"
+      {/* Right Side: Auth Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full"
+        >
+          <div className="text-center lg:text-left mb-10">
+            <h2 className="text-4xl font-serif text-gov-navy mb-3">
+              {isLogin ? 'Officer Login' : 'Officer Registration'}
+            </h2>
+            <p className="text-gray-500 font-medium">
+              {isLogin ? 'Secure access to administrative dashboard.' : 'Join the national grievance redressal network.'}
+            </p>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-red-50 text-red-600 p-4 rounded-md mb-6 flex items-center gap-3 border border-red-100 text-sm font-bold"
+              >
+                <AlertCircle className="w-5 h-5" />
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              {!isLogin && (
+                <>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input 
+                      type="text" 
+                      name="fullName" 
+                      required 
+                      value={formData.fullName} 
+                      onChange={handleChange} 
+                      placeholder="Full Name" 
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-gov-navy/20 outline-none transition-all font-medium"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input 
+                      type="email" 
+                      name="email" 
+                      required 
+                      value={formData.email} 
+                      onChange={handleChange} 
+                      placeholder="Official Email ID" 
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-gov-navy/20 outline-none transition-all font-medium"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="relative">
+                      <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input 
+                        type="text" 
+                        name="employeeId" 
+                        required 
+                        value={formData.employeeId} 
+                        onChange={handleChange} 
+                        placeholder="Employee ID" 
+                        className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-gov-navy/20 outline-none transition-all font-medium"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input 
+                        type="tel" 
+                        name="mobile" 
+                        required 
+                        value={formData.mobile} 
+                        onChange={handleChange} 
+                        placeholder="Mobile No." 
+                        className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-gov-navy/20 outline-none transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                    <select 
+                      name="department" 
+                      value={formData.department} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-md appearance-none outline-none font-bold text-gov-navy"
+                    >
+                      {departments.map(dept => <option key={dept} value={dept}>{translateDept(dept, t)}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {isLogin && (
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input 
+                    type="text" 
+                    name="emailOrId" 
+                    required 
+                    value={formData.emailOrId} 
+                    onChange={handleChange} 
+                    placeholder="Email or Employee ID" 
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-gov-navy/20 outline-none transition-all font-medium"
+                  />
+                </div>
+              )}
+
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input 
+                  type="password" 
+                  name="password" 
+                  required 
+                  value={formData.password} 
+                  onChange={handleChange} 
+                  placeholder="Password" 
+                  className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-gov-navy/20 outline-none transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '1rem',
-                background: 'var(--gov-navy)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '14px',
-                fontSize: '1rem',
-                fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.75rem',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              className="w-full bg-gov-navy hover:bg-gov-navy-deep text-white py-4 rounded-md font-bold text-lg flex items-center justify-center gap-3 shadow-lg transition-all"
             >
-              {loading ? t('auth.authenticating') : (isLogin ? t('auth.loginToDashboard') : t('auth.completeRegistration'))}
-              {!loading && <ArrowRight size={18} />}
+              {loading ? <RefreshCw className="w-6 h-6 animate-spin" /> : (isLogin ? <LogIn className="w-6 h-6" /> : <UserPlus className="w-6 h-6" />)}
+              {loading ? 'Processing...' : (isLogin ? 'Login to Portal' : 'Register Officer')}
             </button>
 
-            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-              <p style={{ color: 'var(--gov-text-muted)', fontSize: '0.875rem', fontWeight: 600 }}>
-                {isLogin ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--gov-navy)',
-                    fontWeight: 800,
-                    marginLeft: '0.5rem',
-                    cursor: 'pointer',
-                    textDecoration: 'underline'
-                  }}
+            <div className="text-center mt-8">
+              <p className="text-gray-500 font-medium">
+                {isLogin ? 'New officer in the network?' : 'Already registered?'}
+                <button 
+                  type="button" 
+                  onClick={() => setIsLogin(!isLogin)} 
+                  className="ml-2 text-gov-navy font-bold hover:underline"
                 >
-                  {isLogin ? t('auth.registerNow') : t('auth.loginInstead')}
+                  {isLogin ? 'Create Account' : 'Login Instead'}
                 </button>
               </p>
             </div>
+          </form>
+
+          <div className="mt-12 p-6 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-4">
+            <Shield className="w-6 h-6 text-gov-navy shrink-0 mt-1" />
+            <div>
+              <p className="text-xs font-bold text-gov-navy uppercase tracking-widest mb-1">Security Notice</p>
+              <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                This is a restricted government portal. All access attempts are logged and monitored for security purposes. Unauthorized access is a federal offense.
+              </p>
+            </div>
           </div>
-        </form>
+        </motion.div>
       </div>
     </div>
   );

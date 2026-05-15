@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
@@ -778,4 +779,64 @@ img {
   .queue-container {
     padding: 1rem;
   }
-}
+}
+=======
+@import "tailwindcss";
+
+@theme {
+  --color-gov-navy: #002147;
+  --color-gov-navy-deep: #00152e;
+  --color-gov-saffron: #ff9933;
+  --color-gov-green: #138808;
+  --color-gov-white: #ffffff;
+  --color-gov-border: #e5e7eb;
+  --color-gov-text: #1f2937;
+  --color-gov-text-muted: #6b7280;
+  
+  --font-serif: "Lora", serif;
+  --font-sans: "Inter", "Outfit", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-gov-text font-sans antialiased overflow-x-hidden;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif font-bold text-gov-navy;
+  }
+}
+
+@layer components {
+  .gov-container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+  
+  .btn-gov-primary {
+    @apply inline-flex items-center gap-2 bg-gov-navy text-white px-6 py-3 rounded-md font-bold transition-all hover:bg-gov-navy-deep focus:ring-4 focus:ring-gov-navy/20 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-gov-secondary {
+    @apply inline-flex items-center gap-2 border-2 border-gov-navy text-gov-navy px-6 py-3 rounded-md font-bold transition-all hover:bg-gov-navy hover:text-white disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .gov-card {
+    @apply bg-white border border-gov-border rounded-lg shadow-sm p-6 transition-shadow hover:shadow-md;
+  }
+  
+  .form-input {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gov-navy/20 focus:border-gov-navy transition-all;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gov-navy rounded-full border-2 border-gray-100;
+}
+>>>>>>> 9a197fc43654ac859e6ef1720a2723fe5794d616
