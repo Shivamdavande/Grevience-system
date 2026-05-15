@@ -747,7 +747,6 @@ const Dashboard = ({ user }) => {
                           </div>
                         </div>
 
-<<<<<<< HEAD
                         <div className="space-y-6">
                           <div className="grid grid-cols-3 gap-3">
                             <div className="p-3 bg-gray-50 rounded-lg text-center">
@@ -763,22 +762,6 @@ const Dashboard = ({ user }) => {
                               <p className="text-[8px] text-gray-400 font-bold uppercase">Done</p>
                             </div>
                           </div>
-=======
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center' }}>
-                        <div style={{ background: '#fffbeb', padding: '1rem', borderRadius: '16px' }}>
-                          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#f59e0b' }}>{dStats.pending}</div>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#92400e' }}>{t('admin.pending').toUpperCase()}</div>
-                        </div>
-                        <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '16px' }}>
-                          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#3b82f6' }}>{dStats.inProgress}</div>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#1e40af' }}>{t('admin.inProgress').toUpperCase()}</div>
-                        </div>
-                        <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '16px' }}>
-                          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#10b981' }}>{dStats.resolved}</div>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#166534' }}>{t('admin.resolved').toUpperCase()}</div>
-                        </div>
-                      </div>
->>>>>>> 889b2e26702a4b84ba0e7b0effda1975fad490d4
 
                           <div className="space-y-2">
                             <div className="flex justify-between items-end">
