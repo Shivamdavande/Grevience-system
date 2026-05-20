@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { translateDept, translateStatus } from '../utils/translationUtils';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   PlusCircle, 
@@ -40,7 +41,7 @@ const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
   useEffect(() => {
     const fetchUserComplaints = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/complaints/user/${userAadhar}`);
+        const response = await axios.get(`${API_URL}/api/complaints/user/${userAadhar}`);
         setComplaints(response.data);
       } catch (err) {
         console.error('Error fetching complaints:', err);
@@ -52,7 +53,7 @@ const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
 
     const fetchUserTokens = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/user/${userAadhar}/tokens`);
+        const response = await axios.get(`${API_URL}/api/user/${userAadhar}/tokens`);
         setUserTokens(response.data.tokens);
       } catch (err) {
         console.error('Error fetching tokens:', err);
@@ -68,7 +69,7 @@ const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
   const handleDelete = async (id) => {
     if (window.confirm(t('user.confirmDelete') || "Are you sure you want to delete this complaint? This will remove it from all departments as well.")) {
       try {
-        await axios.delete(`http://127.0.0.1:5000/api/complaints/${id}`);
+        await axios.delete(`${API_URL}/api/complaints/${id}`);
         setComplaints(complaints.filter(c => c._id !== id));
         if (expandedId === id) setExpandedId(null);
       } catch (err) {
@@ -222,7 +223,7 @@ const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
                       </div>
                       <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-none pt-4 sm:pt-0">
                         <div className="flex -space-x-2">
-                          {complaint.imageUrl && <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden"><img src={`http://localhost:5000${complaint.imageUrl}`} className="w-full h-full object-cover" /></div>}
+                          {complaint.imageUrl && <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden"><img src={`${API_URL}${complaint.imageUrl}`} className="w-full h-full object-cover" /></div>}
                           {complaint.resolutionImage && <div className="w-8 h-8 rounded-full border-2 border-white bg-gov-green overflow-hidden flex items-center justify-center text-white"><Check className="w-4 h-4" /></div>}
                         </div>
                         <motion.div animate={{ rotate: expandedId === complaint._id ? 180 : 0 }}>
@@ -289,7 +290,7 @@ const UserDashboard = ({ userAadhar, onNewGrievance, onLogout }) => {
                                     <div className="space-y-2">
                                       <span className="text-[9px] font-bold text-gray-400 uppercase px-1">Original Evidence</span>
                                       <div className="aspect-video rounded-xl overflow-hidden border-2 border-white shadow-md bg-gray-200">
-                                        <img src={`http://localhost:5000${complaint.imageUrl}`} className="w-full h-full object-cover" />
+                                        <img src={`${API_URL}${complaint.imageUrl}`} className="w-full h-full object-cover" />
                                       </div>
                                     </div>
                                   )}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateDept } from '../utils/translationUtils';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send,
@@ -280,7 +281,7 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
     const formData = new FormData();
     formData.append('image', file);
     try {
-      const response = await axios.post('http://localhost:5000/api/analyze-image', formData, {
+      const response = await axios.post(`${API_URL}/api/analyze-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       let desc = response.data.description;
@@ -329,7 +330,7 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
       if (ward) formData.append('ward', ward);
       if (zone) formData.append('zone', zone);
 
-      const response = await axios.post('http://localhost:5000/api/complaints', formData, {
+      const response = await axios.post(`${API_URL}/api/complaints`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setResult(response.data);

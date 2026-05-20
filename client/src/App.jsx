@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { API_URL } from './config';
 import { 
   Globe, 
   Building2, 
@@ -39,7 +40,7 @@ function App() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/public-stats')
+    fetch(`${API_URL}/api/public-stats`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(err => console.error('Stats fetch error:', err));

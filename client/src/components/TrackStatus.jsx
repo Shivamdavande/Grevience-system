@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { translateDept, translateStatus } from '../utils/translationUtils';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckCircle2, 
@@ -44,7 +45,7 @@ const TrackStatus = ({ onBack }) => {
     const cleanId = trackingId.startsWith('#') ? trackingId.substring(1) : trackingId;
 
     try {
-      const response = await axios.get(`http://localhost:5000/api/complaints/${cleanId}`);
+      const response = await axios.get(`${API_URL}/api/complaints/${cleanId}`);
       setResult(response.data);
     } catch (err) {
       setError('The provided Reference ID could not be located in our national database.');
@@ -217,7 +218,7 @@ const TrackStatus = ({ onBack }) => {
                         </h4>
                         <div className="aspect-video rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gray-100 group relative">
                           <img 
-                            src={`http://localhost:5000${result.imageUrl}`} 
+                            src={`${API_URL}${result.imageUrl}`} 
                             alt="Incident Evidence" 
                             className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
                           />

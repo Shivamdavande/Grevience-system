@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -47,7 +48,7 @@ const AadharLogin = ({ onLogin }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/send-otp', { aadhar });
+      const response = await axios.post(`${API_URL}/api/auth/send-otp`, { aadhar });
       setPhoneHint(response.data.phone);
       setStep(2);
       setTimer(60);
@@ -67,7 +68,7 @@ const AadharLogin = ({ onLogin }) => {
     try {
       // Simulate verification delay for immersion
       await new Promise(r => setTimeout(r, 1500));
-      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', { aadhar, otp });
+      const response = await axios.post(`${API_URL}/api/auth/verify-otp`, { aadhar, otp });
       onLogin(response.data.token, aadhar);
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid OTP. Please try again.');

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { translateDept, translateStatus } from '../utils/translationUtils';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import { API_URL } from '../config';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import { 
@@ -71,9 +72,9 @@ const Dashboard = ({ user }) => {
     setLoading(true);
     try {
       const [resComplaints, resStats, resTokens] = await Promise.all([
-        axios.get('http://localhost:5000/api/complaints'),
-        axios.get('http://localhost:5000/api/stats'),
-        axios.get('http://localhost:5000/api/departments/tokens')
+        axios.get(`${API_URL}/api/complaints`),
+        axios.get(`${API_URL}/api/stats`),
+        axios.get(`${API_URL}/api/departments/tokens`)
       ]);
       setComplaints(resComplaints.data || []);
       setStats(resStats.data || { categories: [] });
@@ -95,7 +96,7 @@ const Dashboard = ({ user }) => {
       setResolutionModal({ open: true, complaintId: id });
     } else {
       try {
-        await axios.patch(`http://localhost:5000/api/complaints/${id}`, { status: newStatus });
+        await axios.patch(`${API_URL}/api/complaints/${id}`, { status: newStatus });
         fetchData();
       } catch (err) { console.error(err); }
     }
@@ -130,13 +131,13 @@ const Dashboard = ({ user }) => {
 
     try {
       // Execute both requests concurrently, but handle failures independently
-      const aiPromise = axios.post('http://localhost:5000/api/detect-ai-image', formData)
+      const aiPromise = axios.post(`${API_URL}/api/detect-ai-image`, formData)
         .catch(err => {
           console.error("AI Detect failed", err);
           return { data: { is_ai_generated: false, confidence: 0 } };
         });
 
-      const comparePromise = axios.post('http://localhost:5000/api/compare-images', formData)
+      const comparePromise = axios.post(`${API_URL}/api/compare-images`, formData)
         .catch(err => {
           console.error("Compare failed", err);
           return { data: { similarity_score: 0, is_match: true } };
@@ -167,7 +168,7 @@ const Dashboard = ({ user }) => {
         resolutionLat: resolutionLocation.lat,
         resolutionLon: resolutionLocation.lon
       };
-      await axios.patch(`http://localhost:5000/api/complaints/${resolutionModal.complaintId}`, payload);
+      await axios.patch(`${API_URL}/api/complaints/${resolutionModal.complaintId}`, payload);
       await fetchData();
 
       setResolutionModal({ open: false, complaintId: null });
@@ -183,7 +184,7 @@ const Dashboard = ({ user }) => {
 
   const handleUpdateCoords = async () => {
     try {
-      await axios.patch(`http://localhost:5000/api/complaints/${editCoordsModal.complaintId}`, {
+      await axios.patch(`${API_URL}/api/complaints/${editCoordsModal.complaintId}`, {
         lat: parseFloat(editCoordsModal.lat),
         lon: parseFloat(editCoordsModal.lon)
       });
@@ -765,12 +766,12 @@ const Dashboard = ({ user }) => {
                   {viewImageModal.originalImage && (
                     <div>
                       <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>{t('admin.originalGrievance')}</p>
-                      <img src={`http://localhost:5000${viewImageModal.originalImage}`} style={{ width: '100%', borderRadius: '16px', height: '400px', objectFit: 'cover' }} />
+                      <img src={`${API_URL}${viewImageModal.originalImage}`} style={{ width: '100%', borderRadius: '16px', height: '400px', objectFit: 'cover' }} />
                     </div>
                   )}
                   <div>
                     <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gov-text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase' }}>{viewImageModal.originalImage ? t('admin.resolutionProof') : t('admin.imageEvidence')}</p>
-                    <img src={viewImageModal.image.startsWith('data:') ? viewImageModal.image : `http://localhost:5000${viewImageModal.image}`} style={{ width: '100%', borderRadius: '16px', height: '400px', objectFit: 'cover' }} />
+                    <img src={viewImageModal.image.startsWith('data:') ? viewImageModal.image : `${API_URL}${viewImageModal.image}`} style={{ width: '100%', borderRadius: '16px', height: '400px', objectFit: 'cover' }} />
                   </div>
                 </div>
 
@@ -978,14 +979,14 @@ const Dashboard = ({ user }) => {
                     <div className="space-y-4">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] px-2">Original Incident Proof</p>
                       <div className="rounded-2xl overflow-hidden border-4 border-gray-100 shadow-xl aspect-square bg-gray-50">
-                        <img src={`http://localhost:5000${viewImageModal.originalImage}`} className="w-full h-full object-cover" alt="Original" />
+                        <img src={`${API_URL}${viewImageModal.originalImage}`} className="w-full h-full object-cover" alt="Original" />
                       </div>
                     </div>
                   )}
                   <div className="space-y-4">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] px-2">{viewImageModal.originalImage ? 'Final Resolution Proof' : 'Evidence Submission'}</p>
                     <div className="rounded-2xl overflow-hidden border-4 border-gray-100 shadow-xl aspect-square bg-gray-50">
-                      <img src={viewImageModal.image.startsWith('data:') ? viewImageModal.image : `http://localhost:5000${viewImageModal.image}`} className="w-full h-full object-cover" alt="Evidence" />
+                      <img src={viewImageModal.image.startsWith('data:') ? viewImageModal.image : `${API_URL}${viewImageModal.image}`} className="w-full h-full object-cover" alt="Evidence" />
                     </div>
                   </div>
                 </div>

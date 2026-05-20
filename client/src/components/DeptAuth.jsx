@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Shield, Building2, BadgeCheck, Phone, Lock, MapPin, ArrowRight, UserPlus, LogIn, ShieldCheck, Globe, Zap, AlertCircle, RefreshCw } from 'lucide-react';
+import { API_URL } from '../config';
 import { useTranslation } from 'react-i18next';
 import { translateDept } from '../utils/translationUtils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,7 +51,7 @@ const DeptAuth = ({ onLogin }) => {
       : formData;
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
