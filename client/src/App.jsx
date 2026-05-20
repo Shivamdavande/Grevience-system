@@ -24,8 +24,6 @@ import GrievanceForm from './components/GrievanceForm';
 import TrackStatus from './components/TrackStatus';
 import Dashboard from './components/Dashboard';
 import DeptAuth from './components/DeptAuth';
-import AadharLogin from './components/AadharLogin';
-import UserDashboard from './components/UserDashboard';
 import LanguageSelector from './components/LanguageSelector';
 import './index.css';
 
@@ -35,8 +33,6 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDeptAuthenticated, setIsDeptAuthenticated] = useState(!!localStorage.getItem('deptToken'));
   const [deptUser, setDeptUser] = useState(JSON.parse(localStorage.getItem('deptUser')) || null);
-  const [isCitizenAuthenticated, setIsCitizenAuthenticated] = useState(!!localStorage.getItem('citizenToken'));
-  const [userAadhar, setUserAadhar] = useState(localStorage.getItem('userAadhar') || '');
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
@@ -55,20 +51,10 @@ function App() {
     setView('admin');
   };
 
-  const handleCitizenLogin = (token, aadhar) => {
-    localStorage.setItem('citizenToken', token);
-    localStorage.setItem('userAadhar', aadhar);
-    setIsCitizenAuthenticated(true);
-    setUserAadhar(aadhar);
-    setView('user-dashboard');
-  };
-
   const handleLogout = () => {
     localStorage.clear();
     setIsDeptAuthenticated(false);
     setDeptUser(null);
-    setIsCitizenAuthenticated(false);
-    setUserAadhar('');
     setView('home');
   };
 
@@ -105,25 +91,17 @@ function App() {
             >
               {t('nav.home')}
             </button>
-            {isCitizenAuthenticated && (
-              <button 
-                onClick={() => handleViewChange('user-dashboard')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-widest transition-all ${view === 'user-dashboard' ? 'text-gov-navy bg-gray-50' : 'text-gray-400 hover:text-gov-navy hover:bg-gray-50'}`}
-              >
-                {t('nav.myDashboard', 'My Dashboard')}
-              </button>
-            )}
-            {!isDeptAuthenticated && !isCitizenAuthenticated ? null : isDeptAuthenticated ? (
+            {isDeptAuthenticated && (
               <button 
                 onClick={() => handleViewChange('admin')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-widest transition-all ${view === 'admin' ? 'text-gov-navy bg-gray-50' : 'text-gray-400 hover:text-gov-navy hover:bg-gray-50'}`}
               >
                 {t('nav.dashboard')}
               </button>
-            ) : null}
+            )}
             <div className="hidden lg:flex items-center gap-4 border-l border-gray-200 pl-6 ml-2">
               <LanguageSelector />
-              {isDeptAuthenticated || isCitizenAuthenticated ? (
+              {isDeptAuthenticated ? (
                 <button 
                   onClick={handleLogout}
                   className="px-5 py-2.5 bg-gray-50 text-gov-navy border border-gray-200 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center gap-2"
@@ -132,12 +110,6 @@ function App() {
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => handleViewChange('citizen-auth')}
-                    className="px-5 py-2.5 bg-white text-gov-navy border border-gov-navy/20 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center gap-2"
-                  >
-                    <User className="w-4 h-4" /> {t('nav.citizenLogin', 'Citizen Login')}
-                  </button>
                   <button 
                     onClick={() => handleViewChange('dept-auth')}
                     className="px-5 py-2.5 bg-gov-navy text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gov-navy-deep transition-all shadow-lg shadow-gov-navy/20 flex items-center gap-2"
@@ -197,39 +169,24 @@ function App() {
               key="home" 
               onReportGrievance={() => handleViewChange('report')} 
               onTrackStatus={() => handleViewChange('track')}
-              onCitizenLogin={() => handleViewChange('citizen-auth')}
+              onCitizenLogin={() => handleViewChange('report')}
               onDeptLogin={() => handleViewChange('dept-auth')}
               stats={stats}
-              isAuthenticated={isCitizenAuthenticated}
+              isAuthenticated={false}
               isDeptAuthenticated={isDeptAuthenticated}
             />
           )}
           {view === 'report' && (
             <GrievanceForm 
               key="report" 
-              userAadhar={userAadhar}
-              onSuccess={() => handleViewChange(isCitizenAuthenticated ? 'user-dashboard' : 'home')} 
+              userAadhar=""
+              onSuccess={() => handleViewChange('home')} 
               onBack={() => handleViewChange('home')} 
             />
           )}
           {view === 'track' && <TrackStatus key="track" onBack={() => handleViewChange('home')} />}
           {view === 'admin' && <Dashboard key="admin" user={deptUser} onLogout={handleLogout} />}
           {view === 'dept-auth' && <DeptAuth key="dept-auth" onLogin={handleDeptLogin} onBack={() => handleViewChange('home')} />}
-          {view === 'citizen-auth' && (
-            <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 p-6">
-              <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-2xl border border-gray-100">
-                <AadharLogin onLogin={handleCitizenLogin} />
-              </div>
-            </div>
-          )}
-          {view === 'user-dashboard' && (
-            <UserDashboard 
-              key="user-dashboard" 
-              userAadhar={userAadhar} 
-              onNewGrievance={() => handleViewChange('report')} 
-              onLogout={handleLogout} 
-            />
-          )}
         </AnimatePresence>
       </main>
 

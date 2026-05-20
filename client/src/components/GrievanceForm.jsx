@@ -367,7 +367,7 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
             onClick={() => onSuccess ? onSuccess() : window.location.reload()}
             className="w-full bg-gov-navy hover:bg-gov-navy-deep text-white py-4 rounded-md font-bold text-lg transition-all shadow-lg"
           >
-            {t('form.goDashboard', 'Go to Dashboard')}
+            {t('form.backHome', 'Back to Homepage')}
           </button>
         </motion.div>
       </div>
