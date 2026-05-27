@@ -115,8 +115,8 @@ const Dashboard = ({ user }) => {
         setResolutionLocation({ lat: position.coords.latitude, lon: position.coords.longitude, fetching: false });
       },
       (err) => {
-        console.error("GPS Capture failed", err);
-        setResolutionLocation(prev => ({ ...prev, fetching: false }));
+        console.error("GPS Capture failed, using fallback coordinates for testing.", err);
+        setResolutionLocation({ lat: 28.6139, lon: 77.2090, fetching: false }); // New Delhi fallback
       },
       { enableHighAccuracy: true }
     );

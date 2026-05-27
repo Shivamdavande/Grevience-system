@@ -9,6 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const FormData = require('form-data');
+const { analyzeImage } = require('./imageAnalyzer');
 
 const Grievance = require('./models/Grievance');
 const Department = require('./models/Department');
@@ -301,15 +302,11 @@ app.post('/api/dept/login', async (req, res) => {
 app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Image required' });
   try {
-    const formData = new FormData();
-    formData.append('file', fs.createReadStream(req.file.path));
-    const aiRes = await axios.post(`${AI_SERVICE_URL}/analyze-image`, formData, {
-      headers: formData.getHeaders()
-    });
-    res.json(aiRes.data);
+    const result = await analyzeImage(req.file.path, req.file.originalname);
+    res.json(result);
   } catch (err) {
-    console.error("Proxy analyze-image error:", err.message);
-    res.status(500).json({ error: 'AI Analysis Failed' });
+    console.error('Image analysis error:', err.message, err.response ? err.response.data : '');
+    res.status(500).json({ error: 'AI analysis failed', details: err.message, aiError: err.response ? err.response.data : null });
   }
 });
 
@@ -318,73 +315,64 @@ app.post('/api/complaints', upload.single('image'), async (req, res) => {
   const { text, location, lat, lon, department: userSelectedDepartment, userEmail, ward, zone } = req.body;
   const imageFile = req.file;
 
+  // Validate required fields
   if (!userEmail) {
     return res.status(400).json({ error: 'User Email is required' });
   }
-
   if (!text && !imageFile) {
     return res.status(400).json({ error: 'Complaint text or image is required' });
   }
 
+  // Prepare variables
+  let category, priority, confidence, imageDescription;
+  let imageUrl = imageFile ? `/uploads/${imageFile.filename}` : null;
+
+  // Analyze image if provided
+  if (imageFile) {
+    try {
+      const aiResult = await analyzeImage(imageFile.path, imageFile.originalname);
+      ({ category, priority, confidence, description: imageDescription } = aiResult);
+      console.log(`AI Analysis: ${category} (${priority}) - ${imageDescription}`);
+    } catch (err) {
+      console.error('⚠️ Image analysis via AI service failed:', err.message, err.response ? err.response.data : '');
+      // Fallback: use empty string as description and generic metadata
+      category = 'Others';
+      priority = 'Low';
+      confidence = 0;
+      imageDescription = '';
+    }
+  } else {
+    // Analyze text only
+    try {
+      const aiResponse = await axios.post(`${AI_SERVICE_URL}/classify`, { text });
+      ({ category, priority, confidence } = aiResponse.data);
+    } catch (aiErr) {
+      console.error('AI Service Text Error:', aiErr.message);
+      category = 'Others';
+      priority = 'Low';
+      confidence = 0;
+    }
+  }
+
+  // Map Category to Department (only if not provided by user)
+  let finalDepartment = userSelectedDepartment || 'Municipal Corporation';
+  if (!userSelectedDepartment || userSelectedDepartment === 'Municipal Corporation') {
+    const cat = (category || '').toLowerCase();
+    const textLower = (text || '').toLowerCase();
+    if (cat.includes('road') || textLower.includes('road') || textLower.includes('sadak')) {
+      finalDepartment = 'Road Department';
+    } else if (cat.includes('sewage') || cat.includes('sanitation') || textLower.includes('sewage') || textLower.includes('gutter')) {
+      finalDepartment = 'Sewage Department';
+    } else if (cat.includes('waste') || cat.includes('garbage') || textLower.includes('kachra') || textLower.includes('waste')) {
+      finalDepartment = 'Waste Department';
+    } else if (cat.includes('water') || textLower.includes('water') || textLower.includes('pani') || textLower.includes('paani')) {
+      finalDepartment = 'Water Department';
+    } else if (cat.includes('electric') || textLower.includes('light') || textLower.includes('bijli')) {
+      finalDepartment = 'Electric Department';
+    }
+  }
+
   try {
-    let category, priority, confidence, imageDescription;
-    let imageUrl = imageFile ? `/uploads/${imageFile.filename}` : null;
-
-    if (imageFile) {
-      // Analyze image if provided
-      console.log("Image received, sending to AI service for analysis...");
-      const formData = new FormData();
-      formData.append('file', fs.createReadStream(imageFile.path));
-
-      try {
-        const aiResponse = await axios.post(`${AI_SERVICE_URL}/analyze-image`, formData, {
-          headers: formData.getHeaders()
-        });
-        ({ category, priority, confidence, description: imageDescription } = aiResponse.data);
-        console.log(`AI Analysis: ${category} (${priority}) - ${imageDescription}`);
-      } catch (aiErr) {
-        console.error("AI Service Image Analysis Error:", aiErr.message);
-        // Fallback
-        category = 'Others';
-        priority = 'Low';
-        confidence = 0;
-        imageDescription = "Image analysis failed";
-      }
-    } else {
-      // Analyze text only
-      console.log(`Sending text to AI service: "${text}"`);
-      try {
-        const aiResponse = await axios.post(`${AI_SERVICE_URL}/classify`, { text });
-        ({ category, priority, confidence } = aiResponse.data);
-      } catch (aiErr) {
-        console.error("AI Service Text Error:", aiErr.message);
-        category = 'Others';
-        priority = 'Low';
-        confidence = 0;
-      }
-    }
-
-    // 2. Map Category to Department (only if not provided by user)
-    let finalDepartment = userSelectedDepartment || 'Municipal Corporation';
-
-    // If frontend didn't send a department, fallback to AI logic
-    if (!userSelectedDepartment || userSelectedDepartment === 'Municipal Corporation') {
-      const cat = (category || '').toLowerCase();
-      const textLower = (text || '').toLowerCase();
-
-      if (cat.includes('road') || textLower.includes('road') || textLower.includes('sadak')) {
-        finalDepartment = 'Road Department';
-      } else if (cat.includes('sewage') || cat.includes('sanitation') || textLower.includes('sewage') || textLower.includes('gutter')) {
-        finalDepartment = 'Sewage Department';
-      } else if (cat.includes('waste') || cat.includes('garbage') || textLower.includes('kachra') || textLower.includes('waste')) {
-        finalDepartment = 'Waste Department';
-      } else if (cat.includes('water') || textLower.includes('water') || textLower.includes('pani') || textLower.includes('paani')) {
-        finalDepartment = 'Water Department';
-      } else if (cat.includes('electric') || cat.includes('light') || textLower.includes('light') || textLower.includes('bijli')) {
-        finalDepartment = 'Electric Department';
-      }
-    }
-
     // 2.8 Check for duplicate pending/in-progress complaints within 150m of same category
     if (lat && lon) {
       const parsedLat = parseFloat(lat);
@@ -404,11 +392,11 @@ app.post('/api/complaints', upload.single('image'), async (req, res) => {
             if (!existing.duplicateEmails.includes(userEmail)) {
               existing.duplicateEmails.push(userEmail);
             }
-            
+
             // Append duplicate user notification in English as requested
             const duplicateCountText = existing.upvotes === 1 ? '1 other citizen' : `${existing.upvotes} other citizens`;
             existing.text = existing.text + `\n\n[Additional Report: This issue has also been reported by ${duplicateCountText}. Additional details: ${text || 'Same issue reported.'}]`;
-            
+
             const saved = await existing.save();
             return res.status(200).json(saved);
           }
@@ -582,7 +570,7 @@ app.patch('/api/complaints/:id', async (req, res) => {
         if (fs.existsSync(usersPath)) {
           usersData = JSON.parse(fs.readFileSync(usersPath));
         }
-        
+
         // 1. Award to original reporter
         const userIndex = usersData.findIndex(u => u.email === complaint.userEmail || u.aadhar === complaint.userEmail);
         if (userIndex !== -1) {
@@ -637,16 +625,25 @@ app.patch('/api/complaints/:id', async (req, res) => {
 });
 
 // 3.5 Get user tokens
-app.get('/api/user/:email/tokens', async (req, res) => {
+app.get('/api/user/:identifier/tokens', async (req, res) => {
   try {
+    const identifier = req.params.identifier;
+    // Find user by email or aadhar (allow both)
     const usersData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'users.json')));
-    const matchingUsers = usersData.filter(u => u.email === req.params.email || u.aadhar === req.params.email);
-    const totalTokens = matchingUsers.reduce((sum, u) => sum + (u.tokens || 0), 0);
-    res.json({ tokens: totalTokens });
+    const user = usersData.find(u => u.email === identifier || u.aadhar === identifier);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    // Return actual tokens awarded from the JSON store
+    const tokenCount = user.tokens || 0;
+    res.json({ tokens: tokenCount });
   } catch (err) {
+    console.error('Token endpoint error:', err);
     res.status(500).json({ error: 'Server Error' });
   }
 });
+
+
 
 // 3.6 Get department tokens
 app.get('/api/departments/tokens', async (req, res) => {
@@ -707,25 +704,7 @@ app.get('/api/public-stats', async (req, res) => {
   }
 });
 
-// 5. Analyze image only (for immediate feedback)
-app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
-  const imageFile = req.file;
-  if (!imageFile) return res.status(400).json({ error: 'Image is required' });
 
-  try {
-    const formData = new FormData();
-    formData.append('file', fs.createReadStream(imageFile.path));
-
-    const aiResponse = await axios.post(`${AI_SERVICE_URL}/analyze-image`, formData, {
-      headers: formData.getHeaders()
-    });
-
-    res.json(aiResponse.data);
-  } catch (err) {
-    console.error("AI Analysis failed", err.message);
-    res.status(500).json({ error: 'AI analysis failed' });
-  }
-});
 
 // 6. Detect AI-generated image
 app.post('/api/detect-ai-image', upload.single('image'), async (req, res) => {

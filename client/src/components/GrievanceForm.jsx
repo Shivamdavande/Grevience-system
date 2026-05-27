@@ -30,7 +30,12 @@ import MapPicker from './MapPicker';
 const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
   const { t, i18n } = useTranslation();
   const [step, setStep] = useState(1);
+  const [isAiGenerated, setIsAiGenerated] = useState(false);
+  const [aiDetectConfidence, setAiDetectConfidence] = useState(0);
   const [text, setText] = useState('');
+  // Store the raw English description from AI so we can re‑translate when language changes
+  const [originalDesc, setOriginalDesc] = useState('');
+  const [originalText, setOriginalText] = useState('');
   const [location, setLocation] = useState('');
   const [coords, setCoords] = useState({ lat: null, lon: null });
   const [image, setImage] = useState(null);
@@ -56,23 +61,44 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
   const recognitionRef = useRef(null);
   const prevLangRef = useRef(i18n.language);
 
-  // Dynamically translate text if language changes
+  // Translate texts when language changes
   useEffect(() => {
-    const translateExistingText = async () => {
-      if (text && prevLangRef.current !== i18n.language) {
+    const translate = async () => {
+      // Translate main complaint text (originalText)
+      if (originalText && i18n.language !== 'en') {
         try {
-          const transRes = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${prevLangRef.current}&tl=${i18n.language}&dt=t&q=${encodeURIComponent(text)}`);
+          const transRes = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${i18n.language}&dt=t&q=${encodeURIComponent(originalText)}`);
           if (transRes.data && transRes.data[0] && transRes.data[0][0]) {
-            setText(transRes.data.map(chunk => chunk[0]).join(''));
+            const translated = transRes.data[0][0][0];
+            setText(translated);
           }
         } catch (e) {
-          console.error("Auto translation failed on lang change", e);
+          console.error('Main text translation failed', e);
         }
-        prevLangRef.current = i18n.language;
+      } else {
+        setText(originalText);
       }
+
+      // Translate description from originalDesc
+      if (originalDesc && i18n.language !== 'en') {
+        try {
+          const transRes = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${i18n.language}&dt=t&q=${encodeURIComponent(originalDesc)}`);
+          if (transRes.data && transRes.data[0] && transRes.data[0][0]) {
+            const descTrans = transRes.data[0][0][0];
+            // Rebuild the full complaint text using originalText (user input) and the translated description
+            const rebuilt = `${originalText ? originalText + ' ' : ''}${descTrans}`;
+            setText(rebuilt);
+          }
+        } catch (e) {
+          console.error('Description translation failed', e);
+        }
+      } else {
+        setText(`${originalText ? originalText + ' ' : ''}${originalDesc}`);
+      }
+      prevLangRef.current = i18n.language;
     };
-    translateExistingText();
-  }, [i18n.language, text]);
+    translate();
+  }, [i18n.language, originalDesc, originalText]);
 
 
   // Initialize Speech Recognition
@@ -82,7 +108,7 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      
+
       recognition.onresult = (event) => {
         let currentTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -126,7 +152,7 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
       else if (i18n.language === 'bn') langCode = 'bn-IN';
       else if (i18n.language === 'ta') langCode = 'ta-IN';
       else if (i18n.language === 'te') langCode = 'te-IN';
-      
+
       recognitionRef.current.lang = langCode;
       recognitionRef.current.start();
       setIsListening(true);
@@ -166,10 +192,10 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
   const extractWardZone = (sug) => {
     const addr = sug.address || {};
     const full = sug.display_name || "";
-    
+
     // 1. Try structured fields
     let area = addr.suburb || addr.neighbourhood || addr.residential || addr.village || addr.town;
-    
+
     // 2. Fallback: Search for "Ward X" or "Zone X" or known key neighborhoods
     if (!area || (!area.toLowerCase().includes('ward') && !area.toLowerCase().includes('zone'))) {
       const wardMatch = full.match(/ward\s*(\d+)/i);
@@ -179,10 +205,10 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
       else {
         // Find the best candidate from address parts (excluding city/country)
         const parts = full.split(',').map(p => p.trim());
-        const bestPart = parts.find(p => 
-          p.toLowerCase().includes('kokta') || 
-          p.toLowerCase().includes('nagar') || 
-          p.toLowerCase().includes('ward') || 
+        const bestPart = parts.find(p =>
+          p.toLowerCase().includes('kokta') ||
+          p.toLowerCase().includes('nagar') ||
+          p.toLowerCase().includes('ward') ||
           p.toLowerCase().includes('sector') ||
           (p.length < 20 && !p.toLowerCase().includes('bhopal') && !p.toLowerCase().includes('india') && !p.toLowerCase().includes('madhya'))
         );
@@ -196,7 +222,7 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
         }
       }
     }
-    
+
     const city = addr.city || addr.county || addr.state || "Bhopal";
     return { area, city };
   };
@@ -214,18 +240,18 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
         // Narrow search to Bhopal if it looks like a local address
         let searchQuery = location;
         if (!location.toLowerCase().includes('bhopal')) searchQuery += ", Bhopal";
-        
+
         const res = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&addressdetails=1&limit=5`, {
           headers: { 'User-Agent': 'AIGrievanceSystem/1.0' }
         });
-        
+
         if (res.data && res.data.length > 0) {
           setSuggestions(res.data);
           setShowSuggestions(true);
-          
+
           // Auto-pick the first result's ward/zone immediately
           const first = res.data[0];
-          
+
           const { area, city } = extractWardZone(first);
           setWard(area);
           setZone(city);
@@ -244,11 +270,11 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
   const handleSuggestionClick = (sug) => {
     setLocation(sug.display_name);
     setCoords({ lat: parseFloat(sug.lat), lon: parseFloat(sug.lon) });
-    
+
     const { area, city } = extractWardZone(sug);
     setWard(area);
     setZone(city);
-    
+
     setSuggestions([]);
     setShowSuggestions(false);
     setIsManualInput(false);
@@ -284,7 +310,12 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
       const response = await axios.post(`${API_URL}/api/analyze-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      let desc = response.data.description;
+      console.log('AI analysis response:', response.data);
+      // Try multiple possible fields for description
+      let desc = response.data.description || response.data.caption || response.data.desc || '';
+      // Store raw description for later re‑translation
+      setOriginalDesc(desc);
+      // Translate to current UI language if not English
       if (desc && i18n.language && i18n.language !== 'en') {
         try {
           const transRes = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${i18n.language}&dt=t&q=${encodeURIComponent(desc)}`);
@@ -292,10 +323,17 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
             desc = transRes.data[0][0][0];
           }
         } catch (e) {
-          console.error("Translation failed", e);
+          console.error('Translation failed', e);
         }
       }
-      if (desc) setText(prev => prev ? prev + ' ' + desc : desc);
+      // Clean description: remove filename and any uploaded path fragments
+      if (desc) {
+        const filenamePattern = new RegExp(file.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
+        desc = desc.replace(filenamePattern, '').replace(/\/uploads\/[\w.-]*/g, '').trim();
+      }
+      // Combine user‑entered text (originalText) with the AI description without duplicating existing description
+      const combined = `${originalText ? originalText + ' ' : ''}${desc}`.trim();
+      setText(combined);
 
       if (response.data.category) {
         const cat = response.data.category.toLowerCase();
@@ -307,8 +345,28 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
         else if (cat.includes('electric') || cat.includes('light')) dept = 'Electric Department';
         setSelectedDept(dept);
       }
+
+      // AI detection of generated image
+      try {
+        const detectForm = new FormData();
+        detectForm.append('image', file);
+        const detectRes = await axios.post(`${API_URL}/api/detect-ai-image`, detectForm, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setIsAiGenerated(!!detectRes.data.is_ai_generated);
+        if (detectRes.data.confidence) setAiDetectConfidence(detectRes.data.confidence);
+      } catch (detectErr) {
+        console.error('AI detection error', detectErr);
+        setIsAiGenerated(false);
+        setAiDetectConfidence(0);
+      }
+
     } catch (err) {
-      console.error(err);
+      console.error('Image analysis error', err);
+      // No description fallback; keep existing description unchanged
+      // Ensure AI detection state resets
+      setIsAiGenerated(false);
+      setAiDetectConfidence(0);
     } finally {
       setAnalyzingImage(false);
     }
@@ -327,6 +385,9 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
       formData.append('userEmail', userAadhar || 'anonymous');
 
       if (image) formData.append('image', image);
+      // Append AI detection flags
+      if (isAiGenerated) formData.append('isAiGenerated', isAiGenerated);
+      if (aiDetectConfidence) formData.append('aiDetectionConfidence', aiDetectConfidence);
       if (ward) formData.append('ward', ward);
       if (zone) formData.append('zone', zone);
 
@@ -334,6 +395,9 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setResult(response.data);
+      // Reset AI detection state after successful submit
+      setIsAiGenerated(false);
+      setAiDetectConfidence(0);
     } catch (error) {
       console.error(error);
     } finally {
@@ -447,22 +511,37 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
                     <div>
                       <div className="flex justify-between items-center mb-3">
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">{t('form.problemDesc', 'Problem Description')}</label>
-                        <button
-                          type="button"
-                          onClick={toggleListening}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                            isListening 
-                              ? 'bg-red-100 text-red-600 animate-pulse border border-red-200' 
+                        <div className="flex gap-2">
+                          {originalDesc && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Remove originalDesc from the current text if possible, or just clear it
+                                setOriginalDesc('');
+                                setText(originalText.replace(originalDesc, '').trim());
+                                setOriginalText(originalText.replace(originalDesc, '').trim());
+                              }}
+                              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-all border border-red-100"
+                            >
+                              <X className="w-3.5 h-3.5" /> Remove AI Text
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={toggleListening}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isListening
+                              ? 'bg-red-100 text-red-600 animate-pulse border border-red-200'
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-200 shadow-sm'
-                          }`}
-                        >
-                          {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5 text-gov-saffron animate-bounce" />}
-                          {isListening ? 'Stop Listening' : 'Speak to Write'}
-                        </button>
+                              }`}
+                          >
+                            {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5 text-gov-saffron animate-bounce" />}
+                            {isListening ? 'Stop Listening' : 'Speak to Write'}
+                          </button>
+                        </div>
                       </div>
                       <textarea
                         value={text}
-                        onChange={(e) => setText(e.target.value)}
+                        onChange={(e) => { setText(e.target.value); setOriginalText(e.target.value); }}
                         placeholder={t('form.problemPlaceholder', 'Describe the issue in detail...')}
                         className="w-full p-6 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gov-navy/20 min-h-[150px] text-lg"
                       />
@@ -537,21 +616,21 @@ const GrievanceForm = ({ userAadhar, onSuccess, onBack }) => {
                     {coords.lat && !geocoding && (
                       <div className="mt-8 p-5 bg-green-50 rounded-xl border border-green-100 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
-                           <p className="text-xs text-gov-green font-bold flex items-center gap-2 m-0 uppercase tracking-widest">
-                              <ShieldCheck className="w-4 h-4" /> {t('form.locationSynced', 'LOCATION SYNCED')}
-                           </p>
-                           <span className="text-[10px] font-bold text-gov-green opacity-80">{coords.lat.toFixed(4)}, {coords.lon.toFixed(4)}</span>
+                          <p className="text-xs text-gov-green font-bold flex items-center gap-2 m-0 uppercase tracking-widest">
+                            <ShieldCheck className="w-4 h-4" /> {t('form.locationSynced', 'LOCATION SYNCED')}
+                          </p>
+                          <span className="text-[10px] font-bold text-gov-green opacity-80">{coords.lat.toFixed(4)}, {coords.lon.toFixed(4)}</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-green-100 shadow-sm">
                           <div className="bg-gov-navy text-white p-2 rounded-md flex">
                             <MapPin className="w-4 h-4" />
                           </div>
                           <div className="flex-1">
                             <p className="text-[10px] font-bold text-gray-500 m-0 uppercase tracking-widest">{t('form.routingTo', 'Routing to Office')}</p>
-                            <input 
-                              type="text" 
-                              value={ward || ''} 
+                            <input
+                              type="text"
+                              value={ward || ''}
                               onChange={(e) => setWard(e.target.value)}
                               className="text-sm font-bold text-gov-navy border-none bg-transparent w-full outline-none p-0 focus:ring-0"
                               placeholder={t('form.wardPlaceholder', 'Enter Ward/Area')}

@@ -11,3 +11,6 @@ mongoose.connect('mongodb://127.0.0.1:27017/grievance_system').then(async () => 
   console.log('Password reset successfully to admin123');
   process.exit(0);
 }).catch(console.error);
+
+
+
